@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
+<title>方案 D1 · 舞台</title>
+<style>
+/* 方向：夜场排练。深靛蓝的幕布，一盏金色的追光灯照在标题上。 */
+:root{--stage:#0F1623;--ink:#F2EEE6;--ink-2:#A3ABBA;--line:#243045;--lamp:#E3B76A}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--stage)}
+body{color:var(--ink);font-family:"Noto Serif SC",-apple-system,"PingFang SC","Noto Sans SC",serif;padding:0 20px 48px;min-height:100vh;background:radial-gradient(120% 60% at 50% -10%,#1E2B42 0%,var(--stage) 60%)}
+.wrap{max-width:520px;margin:0 auto;padding-top:64px}
+.hero{font-size:34px;line-height:1.3;font-weight:700;margin:0 0 10px;letter-spacing:.02em}
+.hero-sub{margin:0 0 44px;color:var(--ink-2);font-size:15px;line-height:1.7;font-family:-apple-system,"PingFang SC",sans-serif}
+.show{list-style:none;margin:0;padding:0}
+.show li{border-top:1px solid var(--line)}
+.show li:last-child{border-bottom:1px solid var(--line)}
+.show a{display:block;padding:24px 0 22px;color:inherit;text-decoration:none}
+.show h2{margin:0 0 6px;font-size:23px;font-weight:700;line-height:1.35}
+.show p{margin:0 0 14px;color:var(--ink-2);font-size:15px;line-height:1.65;font-family:-apple-system,"PingFang SC",sans-serif}
+.steps{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font-size:13px;color:var(--ink-2);font-family:-apple-system,"PingFang SC",sans-serif}
+.steps li{border:0;padding:0}
+.steps li::before{content:attr(data-n) " ";color:var(--lamp);font-weight:700}
+.show a:hover h2,.show a:focus-visible h2{color:var(--lamp)}
+.show a:focus-visible{outline:2px solid var(--lamp);outline-offset:4px}
+.links{display:flex;gap:22px;margin-top:36px;font-size:15px;font-family:-apple-system,"PingFang SC",sans-serif}
+.links a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--lamp);padding-bottom:3px}
+.foot{margin-top:40px;font-size:13px;color:var(--ink-2);font-family:-apple-system,"PingFang SC",sans-serif}
+.foot i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#7FD3A0;margin-right:8px;vertical-align:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="hero">今天想用 AI 做点什么？</h1>
+  <p class="hero-sub">选一个，照着三步走。每一步都在手机上完成。</p>
+
+  <ul class="show">
+    <li><a href="#">
+      <h2>做一个粉丝测试页</h2>
+      <p>说一句想要的样子，几十秒做出一个能点的小测试。</p>
+      <ol class="steps"><li data-n="1">说一句想要什么</li><li data-n="2">等几十秒</li><li data-n="3">点开玩，或接着说“换个颜色”</li></ol>
+    </a></li>
+    <li><a href="#">
+      <h2>职业功课卡</h2>
+      <p>选律师、记者或老板，聊十分钟，收下一张卡。</p>
+      <ol class="steps"><li data-n="1">选一个职业</li><li data-n="2">聊十分钟</li><li data-n="3">拿到常用说法和习惯动作</li></ol>
+    </a></li>
+    <li><a href="#">
+      <h2>采访问答练习</h2>
+      <p>模拟记者的 5 个问题，每题给要点和一句能直接说的话。</p>
+      <ol class="steps"><li data-n="1">选发布会或日常专访</li><li data-n="2">回答一个问题</li><li data-n="3">看要点，再答一遍</li></ol>
+    </a></li>
+    <li><a href="#">
+      <h2>古装台词速懂</h2>
+      <p>拍一句台词，看白话意思、典故，和人物这时候怎么做。</p>
+      <ol class="steps"><li data-n="1">拍一句或点一句</li><li data-n="2">看白话和典故</li><li data-n="3">看人物的动作</li></ol>
+    </a></li>
+    <li><a href="#">
+      <h2>人物小传生成</h2>
+      <p>回答 8 个问题，整理成只用你说过的话写的小传。</p>
+      <ol class="steps"><li data-n="1">回答 8 个问题</li><li data-n="2">点生成</li><li data-n="3">逐条改到满意</li></ol>
+    </a></li>
+  </ul>
+
+  <div class="links"><a href="#">我的收藏</a><a href="#">随身话术卡</a></div>
+  <div class="foot"><i></i>AI 已连接</div>
+</div>
+</body>
+</html>

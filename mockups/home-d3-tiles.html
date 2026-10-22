@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
+<title>方案 D3 · 色块</title>
+<style>
+/* 方向：舞台上的色块。每个功能是一块颜色，像一张张布景片。颜色只是分类，不做装饰。 */
+:root{--ink:#16181D;--paper:#FAFAF7}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper)}
+body{color:var(--ink);font-family:-apple-system,"PingFang SC","Noto Sans SC",sans-serif;padding:0 16px 40px}
+.wrap{max-width:540px;margin:0 auto;padding-top:36px}
+h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:30px;line-height:1.3;margin:0 0 22px;font-weight:700}
+.tiles{display:grid;gap:10px}
+.tile{display:grid;grid-template-columns:1fr;gap:6px;padding:20px 20px 18px;border-radius:4px;text-decoration:none;color:var(--ink);min-height:132px;align-content:space-between}
+.tile h2{margin:0;font-family:"Noto Serif SC","Songti SC",serif;font-size:23px;font-weight:700;line-height:1.3}
+.tile p{margin:0;font-size:15px;line-height:1.6}
+.tile small{font-size:13px;opacity:.78;margin-top:6px}
+.t1{background:#F0C98A}
+.t2{background:#B9CDBF}
+.t3{background:#C5D0E8}
+.t4{background:#E9B8AE}
+.t5{background:#D9CFE6}
+.tile:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.links a{display:flex;align-items:center;justify-content:center;min-height:48px;border:1px solid #D9D7CF;background:#fff;color:var(--ink);text-decoration:none;font-size:15px;font-weight:600;border-radius:4px}
+.foot{margin-top:24px;font-size:13px;color:#6B6F78}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>今天想用 AI 做点什么？</h1>
+  <div class="tiles">
+    <a class="tile t1" href="#">
+      <h2>做一个粉丝测试页</h2>
+      <p>说一句想要的样子，几十秒做出能点的小测试。</p>
+      <small>想和粉丝互动时用</small>
+    </a>
+    <a class="tile t2" href="#">
+      <h2>职业功课卡</h2>
+      <p>选律师、记者或老板，聊十分钟，拿到一张卡。</p>
+      <small>接新角色、进组之前用</small>
+    </a>
+    <a class="tile t3" href="#">
+      <h2>采访问答练习</h2>
+      <p>模拟记者的 5 个问题，每题给要点和一句能直接说的话。</p>
+      <small>发布会、采访前用</small>
+    </a>
+    <a class="tile t4" href="#">
+      <h2>古装台词速懂</h2>
+      <p>拍一句台词，看白话意思、典故，和人物的动作。</p>
+      <small>台词看不懂的时候用</small>
+    </a>
+    <a class="tile t5" href="#">
+      <h2>人物小传生成</h2>
+      <p>回答 8 个问题，整理成只用你说过的话写的小传。</p>
+      <small>想把角色理清楚时用</small>
+    </a>
+  </div>
+  <div class="links"><a href="#">我的收藏</a><a href="#">随身话术卡</a></div>
+  <div class="foot">AI 已连接</div>
+</div>
+</body>
+</html>
