@@ -1,0 +1,13 @@
+{
+  "name": "liyitong-ai-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "一桐的 AI 排练室：给演员李一桐的 AI 体验网站",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "mock": "node scripts/mock-ark.js",
+    "dev:mock": "ARK_API_KEY=mock ARK_BASE_URL=http://127.0.0.1:9799 node server.js"
+  }
+}
