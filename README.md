@@ -24,7 +24,17 @@
 2. **Claude 预览**：在 claude.ai 的 Artifact 里打开时，用 Claude 回答（只给胶布预览用，她在国内用第 1 种）。
 3. **演示模式**：AI 连不上时，每场都有提前写好的示例结果，不会报错。
 
-## 部署（以搬瓦工 VPS 为例）
+## 在线版（GitHub Pages）
+
+网址：https://crazygoudanli.github.io/liyitong-ai-lab/
+
+静态网页，没有服务器。要用 AI，在她的手机上打开 `网址#setup`，填一次火山方舟的 API Key，之后网页直接从手机调用火山方舟。
+
+- 密钥只存在那台手机的浏览器里，**不要写进仓库**（仓库是公开的）
+- 是否能直接调用，取决于火山方舟是否允许网页跨域请求，需要在手机上点“保存并测试”确认；不行的话用下面的服务器版
+- 更新在线版：`npm run build:static`，再把 `dist/` 推到 `gh-pages` 分支
+
+## 部署服务器版（以搬瓦工 VPS 为例）
 
 ```bash
 git clone https://github.com/CrazyGoudanli/liyitong-ai-lab.git

@@ -24,6 +24,10 @@ function reply(body) {
 }
 
 http.createServer((req, res) => {
+  // 模拟允许网页直接调用（真实火山方舟是否允许，要在手机上实测）
+  res.setHeader("access-control-allow-origin", "*");
+  res.setHeader("access-control-allow-headers", "authorization, content-type");
+  if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
   let raw = "";
   req.on("data", c => raw += c);
   req.on("end", async () => {
