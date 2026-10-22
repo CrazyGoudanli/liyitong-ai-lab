@@ -1,36 +1,25 @@
-<title>一桐的 AI 排练室</title>
+<title>AI 工具箱</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* 版式：一张“通告单”——首页是场次表，每场戏是一页排练本。纸面 + 墨色 + 一点群青。 */
+/* 版式：首页是一个书架，五本书是五个功能；点一本，进入对应的功能页。整站是深靛蓝底 + 一点金色。 */
 :root {
-  --paper: #F1F2F4;
-  --sheet: #FFFFFF;
-  --ink: #15171C;
-  --ink-2: #5B606C;
-  --ink-3: #8C919C;
-  --rule: #D8DBE1;
-  --accent: #2D4A8A;
-  --accent-ink: #FFFFFF;
-  --accent-soft: #E4E9F4;
-  --code-bg: #15171C;
+  color-scheme: dark;
+  --paper: #171B27;
+  --sheet: #212838;
+  --ink: #F1ECE3;
+  --ink-2: #A9B0C0;
+  --ink-3: #7C8596;
+  --rule: #2D364A;
+  --accent: #E6B96C;
+  --accent-ink: #171B27;
+  --accent-soft: rgba(230, 185, 108, .14);
+  --code-bg: #0E1119;
   --code-fg: #C9D2E6;
   --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
   --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --radius: 10px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #111318; --sheet: #191C23; --ink: #ECEEF2; --ink-2: #A0A6B2; --ink-3: #737987;
-    --rule: #2B3039; --accent: #9DB3E6; --accent-ink: #111318; --accent-soft: #1E2740;
-    --code-bg: #0B0C10; --code-fg: #B9C4DC; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #111318; --sheet: #191C23; --ink: #ECEEF2; --ink-2: #A0A6B2; --ink-3: #737987;
-  --rule: #2B3039; --accent: #9DB3E6; --accent-ink: #111318; --accent-soft: #1E2740;
-  --code-bg: #0B0C10; --code-fg: #B9C4DC; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { background: var(--paper); }
@@ -49,28 +38,29 @@ button { cursor: pointer; }
 .muted { color: var(--ink-2); }
 .small { font-size: 14px; }
 
-/* ── 首页：通告单 ── */
-.sheet-head { display: grid; gap: 6px; padding-block: 8px 20px; border-bottom: 2px solid var(--ink); }
-.sheet-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--ink-2); letter-spacing: .08em; }
-.sheet-head h1 { font-size: clamp(30px, 8vw, 40px); line-height: 1.2; }
-.sheet-head p { margin: 0; color: var(--ink-2); }
-.calls { list-style: none; margin: 0; padding: 0; }
-.call {
-  display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
-  width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule);
-  padding: 18px 2px;
-}
-.call:hover .call-title, .call:focus-visible .call-title { color: var(--accent); }
-.call-no { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1.3; white-space: nowrap; align-self: start; padding-top: 2px; }
-.call-no b { color: var(--accent); }
-.call-title { font-size: 19px; font-weight: 600; line-height: 1.35; display: block; }
-.call-desc { font-size: 14px; color: var(--ink-2); display: block; margin-top: 2px; }
-.call-time { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
-.tag-first { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); margin-left: 6px; vertical-align: 2px; font-weight: 500; }
-.home-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
-.foot { margin-top: 28px; font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; }
-.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); margin-right: 6px; vertical-align: 1px; }
-.status-dot.on { background: #3F9A62; }
+/* ── 首页：书架 ── */
+.home-title { font-size: 17px; line-height: 1.4; margin: 0 0 20px; font-weight: 500; text-align: center; color: var(--ink-2); letter-spacing: .04em; }
+#shelf.nogl { display: none; }
+.pick { padding: 4px 0 0; text-align: center; }
+.pick h2 { margin: 0 0 6px; font-size: 26px; line-height: 1.3; }
+.pick #pk-text { margin: 0 auto; max-width: 24em; color: var(--ink-2); font-size: 15px; line-height: 1.6; min-height: 3.2em; } /* 固定两行的高度，换书时下面的书不会跳 */
+.pick .shelf-hint { margin: 8px 0 0; font-size: 12px; color: var(--ink-2); opacity: .8; }
+#stage { position: relative; height: 372px; margin: 6px -16px 0; background: radial-gradient(80% 60% at 50% 38%, #2B3248 0%, #1A1F2E 62%, #14171F 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16%, #000 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 16%, #000 100%); }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+/* 3D 书架用不了时，首页改成这个列表 */
+#fallback-list { display: none; }
+#shelf.nogl + #fallback-list { display: block; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { border-top: 1px solid var(--rule); }
+.list li:last-child { border-bottom: 1px solid var(--rule); }
+.row { display: block; width: 100%; text-align: left; background: none; border: 0; color: inherit; padding: 18px 0 16px; }
+.row h3 { margin: 0 0 4px; font-size: 20px; line-height: 1.35; }
+.row p { margin: 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.6; }
+.row:hover h3 { color: var(--accent); }
+.home-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 32px; }
+.foot { margin-top: 24px; font-size: 13px; color: var(--ink-2); }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); margin-right: 8px; vertical-align: 1px; }
+.status-dot.on { background: #7FD3A0; }
 
 /* ── 按钮 ── */
 .btn {
@@ -96,8 +86,7 @@ button { cursor: pointer; }
   background: var(--paper); padding-block: 10px; border-bottom: 1px solid var(--rule);
 }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
-.back { background: none; border: 0; padding: 8px 4px; font-size: 16px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 4px; }
-.topbar .mono { font-size: 13px; color: var(--ink-3); letter-spacing: .06em; }
+.back { background: none; border: 0; min-height: 44px; padding: 0 12px 0 4px; font-size: 17px; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; }
 .scene { display: grid; gap: 18px; padding-top: 18px; }
 .slug { font-family: var(--font-mono); font-size: 13px; letter-spacing: .12em; color: var(--accent); }
 .scene h2 { font-size: 28px; line-height: 1.25; }
@@ -175,29 +164,30 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
 <div class="wrap" id="app">
 
-  <!-- 首页：通告单 -->
+  <!-- 首页：书架 -->
   <section id="v-home" data-view>
-    <header class="sheet-head">
-      <div class="sheet-meta"><span id="today" class="mono">通告单</span><span>只给一桐看</span></div>
-      <h1>一桐的 AI 排练室</h1>
-      <p>五场戏，每场一分钟。点一场，先按“直接试试”。</p>
-    </header>
-    <ol class="calls" id="calls"></ol>
+    <h1 class="home-title">今天想用 AI 做点什么？</h1>
+    <div id="shelf" aria-label="功能书架">
+      <div class="pick">
+        <h2 id="pk-title"></h2>
+        <p id="pk-text"></p>
+        <p class="shelf-hint">点一下打开，左右滑动换一本</p>
+      </div>
+      <div id="stage"></div>
+    </div>
+    <!-- 只在 3D 书架用不了时才显示 -->
+    <div id="fallback-list"><ol class="list" id="list"></ol></div>
     <div class="home-links">
       <button class="btn" type="button" data-go="saved">我的收藏</button>
       <button class="btn" type="button" data-go="script">随身话术卡</button>
     </div>
-    <div class="foot">
-      <span><span class="status-dot" id="dot"></span><span id="mode">正在连接 AI…</span></span>
-      <span>只用公开资料。不上传剧本、不评你的表演、不聊外貌。</span>
-    </div>
+    <div class="foot"><span class="status-dot" id="dot"></span><span id="mode">正在连接 AI…</span></div>
   </section>
 
-  <!-- 场次页容器 -->
+  <!-- 功能页容器：点书之后进来，左上角返回 -->
   <section id="v-scene" data-view hidden>
     <div class="topbar">
-      <button class="back" type="button" data-go="home">‹ 通告单</button>
-      <span class="mono" id="scene-no"></span>
+      <button class="back" type="button" data-go="home" aria-label="返回">‹ 返回</button>
     </div>
     <div id="scene-body" class="scene"></div>
   </section>
@@ -443,49 +433,81 @@ function saveBtn(item) {
 const thinking = (t = "AI 正在想…") => el("div", { class: "thinking", text: t });
 const demoBadge = (t = "示例结果：AI 没连上，先看看效果") => el("span", { class: "badge-demo", text: t });
 
-/* ───────────── 场次定义 ───────────── */
+/* ───────────── 功能定义（书架上的五本书，点进去就是对应的功能页） ───────────── */
+const APP_TITLE = "AI 工具箱";
 const SCENES = [
-  { id: "web",    no: "一", title: "说一句话，做一个网页", desc: "给粉丝做个“你像我哪个角色”小测试", time: "约 1 分钟", first: true, render: sceneWeb },
-  { id: "pro",    no: "二", title: "和“律师”聊十分钟",    desc: "演新职业前，先认识一个这样的人",     time: "随时可停", render: scenePro },
-  { id: "press",  no: "三", title: "车上的“记者”",        desc: "发布会前，新话题先私下说顺",         time: "5 个问题", render: scenePress },
-  { id: "line",   no: "四", title: "古装台词速懂",         desc: "拍一句台词，看懂意思和讲究",         time: "约 20 秒", render: sceneLine },
-  { id: "bio",    no: "五", title: "回答问题，得到小传",   desc: "不用对着白纸写人物小传",             time: "8 个问题", render: sceneBio },
+  { id: "web",   name: "做一个粉丝测试页", cap: "想和粉丝互动", art: "page",    bg: "#E8825B", fg: "#FFF4E8", text: "说一句想要的样子，几十秒做出一个能点的小测试。",           render: sceneWeb },
+  { id: "pro",   name: "职业功课卡",       cap: "进组之前",     art: "seal",    bg: "#A8C5E2", fg: "#1D2F4A", text: "选律师、记者或老板，聊十分钟，收下一张卡。",               render: scenePro },
+  { id: "press", name: "采访问答练习",     cap: "发布会前",     art: "wave",    bg: "#1F3E9A", fg: "#F6F1E6", text: "模拟记者的 5 个问题，每题给要点和一句能直接说的话。",       render: scenePress },
+  { id: "line",  name: "古装台词速懂",     cap: "拍戏现场",     art: "fan",     bg: "#D9B25C", fg: "#2B1D14", text: "拍一句台词，看白话意思、典故，和人物这时候的动作。",       render: sceneLine },
+  { id: "bio",   name: "人物小传生成",     cap: "理清角色",     art: "contour", bg: "#5A4A7B", fg: "#FBEFF2", text: "回答 8 个问题，整理成只用你说过的话写的小传。",             render: sceneBio },
 ];
 
 /* ───────────── 视图切换 ───────────── */
-let current = null;
-function go(view, sceneId) {
-  TTS.stop(); if (current && current.abort) current.abort();
+let current = null, pushed = false, picked = 0;
+function render(view, sceneId) {
+  TTS.stop(); if (current && current.abort) current.abort(); current = null;
   document.querySelectorAll("[data-view]").forEach(v => v.hidden = true);
-  if (view === "home") { $("#v-home").hidden = false; }
-  else {
+  if (view === "home") {
+    $("#v-home").hidden = false; document.title = APP_TITLE;
+    window.dispatchEvent(new Event("resize"));            // 首页重新显示后，3D 画布要重新量尺寸
+    if (window.shelfGo) window.shelfGo(picked, true);     // 书架停在刚才那一本
+  } else {
     $("#v-scene").hidden = false;
     const body = $("#scene-body"); body.replaceChildren();
     if (view === "scene") {
       const s = SCENES.find(x => x.id === sceneId);
-      $("#scene-no").textContent = `第${s.no}场`;
+      if (!s) return render("home");
+      picked = SCENES.indexOf(s); document.title = s.name;
       current = s.render(body) || null;
-    } else if (view === "saved") { $("#scene-no").textContent = "收藏"; renderSaved(body); }
-    else if (view === "script") { $("#scene-no").textContent = "话术卡"; renderScript(body); }
-    else if (view === "setup") { $("#scene-no").textContent = "设置"; renderSetup(body); }
+    } else if (view === "saved") { document.title = "我的收藏"; renderSaved(body); }
+    else if (view === "script") { document.title = "随身话术卡"; renderScript(body); }
+    else if (view === "setup") { document.title = "设置"; renderSetup(body); }
   }
   window.scrollTo(0, 0);
 }
+/* 先切换页面，再尝试写浏览器历史（让手机的返回手势也能回到首页）。
+   在被隔离的预览窗口里写历史会报错，失败了也不影响使用。 */
+function goHome() {
+  if (pushed) {
+    try {
+      history.back();
+      setTimeout(() => { if (!$("#v-scene").hidden) { pushed = false; render("home"); } }, 400);   // 万一没触发返回，直接回首页
+      return;
+    } catch {}
+  }
+  pushed = false;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+  render("home");
+}
+function go(view, sceneId, noPush) {
+  if (view === "home") return goHome();
+  render(view, sceneId);
+  if (noPush) return;
+  try { history.pushState({ v: view, s: sceneId || null }, "", "#" + (sceneId || view)); pushed = true; } catch { pushed = false; }
+}
+addEventListener("popstate", (e) => {
+  const st = e.state;
+  if (st && st.v) { pushed = true; render(st.v, st.s); } else { pushed = false; render("home"); }
+});
 document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-go]"); if (t) { e.preventDefault(); go(t.dataset.go); }
 });
-function renderHome() {
-  const d = new Date(); const wk = "日一二三四五六"[d.getDay()];
-  $("#today").textContent = `通告单 · ${d.getMonth() + 1}月${d.getDate()}日 周${wk}`;
-  $("#calls").replaceChildren(...SCENES.map(s => el("li", {},
-    el("button", { class: "call", type: "button", onclick: () => go("scene", s.id) },
-      el("span", { class: "call-no" }, "第", el("b", { text: s.no }), "场"),
-      el("span", {},
-        el("span", { class: "call-title" }, s.title, s.first ? el("span", { class: "tag-first", text: "先看这场" }) : null),
-        el("span", { class: "call-desc", text: s.desc })),
-      el("span", { class: "call-time", text: s.time })))));
+
+/* 首页：书架下面的书名和一句话，以及 3D 不可用时的列表 */
+function showPick(i) {
+  const s = SCENES[i]; picked = i;
+  $("#pk-title").textContent = s.name; $("#pk-text").textContent = s.text;
 }
-const sceneHead = (slug, title, lead) => [el("div", { class: "slug", text: slug }), el("h2", { text: title }), el("p", { class: "lead", text: lead })];
+function renderHome() {
+  $("#list").replaceChildren(...SCENES.map(s => el("li", {},
+    el("button", { class: "row", type: "button", onclick: () => go("scene", s.id) },
+      el("h3", { text: s.name }), el("p", { text: s.text })))));
+  showPick(0);
+}
+window.yt = { items: SCENES, showPick, picked: () => picked, open: (i) => go("scene", SCENES[i].id) };   // 给 3D 书架用
+
+const sceneHead = (title, lead) => [el("h2", { text: title }), el("p", { class: "lead", text: lead })];
 
 /* ═════════════ 第一场：说一句话，做一个网页 ═════════════ */
 const WEB_DEFAULT = "帮我做一个测试页，问粉丝 5 个问题，最后告诉他们最像我演过的哪个角色。";
@@ -514,7 +536,7 @@ function sceneWeb(root) {
   const tweakWrap = el("div", { class: "panel", hidden: "" },
     el("div", { class: "label", text: "想改哪里？说一句就行" }),
     el("div", { class: "chips" }, WEB_TWEAKS.map(t => el("button", { class: "chip", type: "button", text: t, onclick: () => { box.value = t; build(t); } }))));
-  root.append(...sceneHead("SC.01 · 内 · 工作室", "说一句话，做一个网页", "你只说想要什么，AI 当场把网页写出来。做好就能点着玩。"),
+  root.append(...sceneHead("做一个粉丝测试页", "说一句想要什么，AI 当场做出一个能点着玩的网页，做好还能接着改。"),
     el("div", { class: "panel" }, el("div", { class: "label", text: "你想做什么网页？" }), box.node), preview, tweakWrap);
 
   async function build(need) {
@@ -589,7 +611,7 @@ function scenePro(root) {
   const out = el("div", { class: "cards" });
   const box = sayBox({ placeholder: "想问她什么？", onSend: (t) => send(t) });
   const cardBtn = el("button", { class: "btn", type: "button", text: "把聊的内容整理成功课卡", onclick: () => makeCard() });
-  root.append(...sceneHead("SC.02 · 内 · 律所", "和“律师”聊十分钟", "AI 扮成这个职业的人，用说话和你聊。聊完一键整理成功课卡。"),
+  root.append(...sceneHead("职业功课卡", "选一个职业，AI 扮成这一行的人和你聊天，聊完整理成一张功课卡。"),
     el("div", { class: "panel" }, el("div", { class: "label", text: "这次想认识谁？" }), pick, speakToggle()),
     chat, el("div", { class: "panel" }, el("div", { class: "label", text: "可以这样问" }), askChips, box.node), cardBtn, out);
 
@@ -676,7 +698,7 @@ function scenePress(root) {
     el("div", { class: "q-actions" },
       el("button", { class: "btn ghost", type: "button", style: "color:inherit;border-color:currentColor", text: "再问一遍", onclick: () => { TTS.unlock(); TTS.on = true; TTS.say(set.qs[i]); } }),
       el("button", { class: "btn ghost", type: "button", style: "color:inherit;border-color:currentColor", text: "下一题", onclick: () => { i = (i + 1) % set.qs.length; paint(true); } })));
-  root.append(...sceneHead("SC.03 · 内 · 保姆车", "车上的“记者”", "AI 扮记者问你五个问题。你随便说，它帮你理成两三个要点。说错了也没人看见。"),
+  root.append(...sceneHead("采访问答练习", "AI 扮记者问你五个问题，你随便说，它帮你理成两三个要点。"),
     el("div", { class: "panel" }, el("div", { class: "label", text: "今天去哪？" }), pick, speakToggle()),
     q, el("div", { class: "panel" }, el("div", { class: "label", text: "你的回答" }), box.node), out,
     el("p", { class: "hint", text: "口径以宣传团队为准。AI 只帮你理顺自己说的话，不打分，也不替你想观点。" }));
@@ -734,7 +756,7 @@ function sceneLine(root) {
     photo = await shrinkImage(f); thumb.src = URL.createObjectURL(photo); thumb.hidden = false;
     explain("", photo);
   });
-  root.append(...sceneHead("SC.04 · 内 · 化妆间", "古装台词速懂", "看不懂的台词，拍一句或点一句。白话意思、典故、人物这时候怎么做，一次看全。"),
+  root.append(...sceneHead("古装台词速懂", "拍一句或点一句台词，看白话意思、典故，和人物这时候怎么做。"),
     el("div", { class: "panel" }, el("div", { class: "label", text: "先点一句示例试试" }),
       el("div", { class: "line-pick" }, LINES.map(l => el("button", { class: "chip", type: "button", text: l.t, onclick: () => explain(l.t, null, l.demo) })))),
     el("div", { class: "panel" }, el("div", { class: "label", text: "换你的台词" }), camBtn, thumb, box.node,
@@ -781,7 +803,7 @@ function sceneBio(root) {
   const skip = el("button", { class: "btn ghost", type: "button", text: "跳过这题", onclick: () => answer("（跳过）") });
   const done = el("button", { class: "btn", type: "button", text: "现在就生成小传", onclick: () => finish() });
   const answerPanel = el("div", { class: "panel", hidden: "" }, el("div", { class: "label", text: "你的回答" }), box.node, el("div", { class: "home-links", style: "margin:0" }, skip, done));
-  root.append(...sceneHead("SC.05 · 内 · 书房", "回答问题，得到小传", "AI 一次只问一个问题，你用说话回答。问完自动整理成人物小传，只用你说过的内容。"),
+  root.append(...sceneHead("人物小传生成", "AI 一次问一个问题，你用说话回答，问完整理成人物小传，只用你说过的话。"),
     el("div", { class: "panel" }, el("div", { class: "label", text: "角色设定（可以改成你的新角色）" }), roleBox, startBtn),
     chat, answerPanel, out);
 
@@ -836,7 +858,7 @@ function sceneBio(root) {
 /* ───────────── 收藏页 / 话术卡 ───────────── */
 function renderSaved(root) {
   const list = store.get("saved", []);
-  root.append(...sceneHead("收藏", "我的收藏", list.length ? "你收藏过的结果，都在这台手机里。" : "还没有收藏。每个结果下面都有“收藏”。"));
+  root.append(...sceneHead("我的收藏", list.length ? "你收藏过的结果，都在这台手机里。" : "还没有收藏。每个结果下面都有“收藏”。"));
   const wrap = el("div", { class: "cards" });
   list.forEach((it, idx) => {
     const d = new Date(it.at);
@@ -851,7 +873,7 @@ function renderSaved(root) {
       }
     }
     c.append(el("div", { class: "card-actions" }, el("button", { class: "linkbtn", type: "button", text: "删除", onclick: () => {
-      const l = store.get("saved", []); l.splice(idx, 1); store.set("saved", l); go("saved"); } })));
+      const l = store.get("saved", []); l.splice(idx, 1); store.set("saved", l); go("saved", null, true); } })));
     wrap.append(c);
   });
   root.append(wrap);
@@ -865,7 +887,7 @@ const SCRIPT_LINES = [
   ["帮我做一个___的小页面。", "想给粉丝做点什么"],
 ];
 function renderScript(root) {
-  root.append(...sceneHead("随身", "随身话术卡", "离开这个网站也能用。打开豆包，照着说就行。"),
+  root.append(...sceneHead("随身话术卡", "离开这个网站也能用。打开豆包，照着说就行。"),
     el("ol", { class: "script-list" }, SCRIPT_LINES.map(([s, w]) => el("li", {}, el("div", {}, el("q", { text: s }), el("span", { class: "when", text: w }))))),
     el("p", { class: "hint", text: "核心只有一句：告诉 AI 我是谁、要干什么、要什么样。" }));
 }
@@ -879,7 +901,7 @@ function renderSetup(root) {
     return [el("label", { class: "label", for: id, text: label }), i];
   };
   const out = el("div", { class: "cards" });
-  root.append(...sceneHead("设置", "连接火山方舟", "密钥只存在这台手机的浏览器里，不写进网站代码。换手机或清了浏览器数据，要重新填。"),
+  root.append(...sceneHead("连接火山方舟", "密钥只存在这台手机的浏览器里，不写进网站代码。换手机或清了浏览器数据，要重新填。"),
     el("div", { class: "panel" },
       ...field("ark-key", "API Key", cur.key, "password"),
       ...field("ark-model", "模型 ID 或接入点 ID", cur.model || ARK_MODEL),
@@ -895,7 +917,7 @@ function renderSetup(root) {
     out.replaceChildren(thinking("正在测试连接…"));
     try {
       const t = await ask({ system: "你是测试助手。", messages: [{ role: "user", content: "请只回复：连接成功" }], maxTokens: 50 });
-      out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接成功" }), el("p", { text: "AI 回复：" + t.trim() }), el("button", { class: "btn primary", type: "button", text: "回到通告单", "data-go": "home" })));
+      out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接成功" }), el("p", { text: "AI 回复：" + t.trim() }), el("button", { class: "btn primary", type: "button", text: "回到首页", "data-go": "home" })));
     } catch (e) {
       const why = e && e.status === 401 ? "密钥不对或已失效。" : e && e.status === 404 ? "模型 ID 不对，或这个账号没开通这个模型。" : e && e.status ? `火山方舟返回了错误（${e.status}）。` : "网页连不上火山方舟。可能是火山方舟不允许网页直接调用（浏览器跨域限制），这种情况要用服务器版。";
       out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接失败" }), el("p", { text: why })));
@@ -934,7 +956,289 @@ show();
 renderHome();
 initAI();
 const hash = (location.hash || "").slice(1);
-if (SCENES.some(s => s.id === hash)) go("scene", hash);
-else if (hash === "setup") go("setup");
+if (SCENES.some(s => s.id === hash)) render("scene", hash);
+else if (["saved", "script", "setup"].includes(hash)) render(hash);
 })();
+</script>
+
+<!-- 3D 书架：three.js 放在仓库的 vendor/ 里，不依赖外部网站。加载失败或没有 WebGL 时，首页自动改成列表。 -->
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.min.js","three/addons/":"./vendor/three/addons/"}}</script>
+<script type="module">
+const shelf = document.getElementById("shelf");
+const stage = document.getElementById("stage");
+const home = document.getElementById("v-home");
+const noGL = () => shelf.classList.add("nogl");
+const hasWebGL = () => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; } };
+
+(async function init() {
+  if (!hasWebGL()) return noGL();
+  let THREE, RoundedBoxGeometry, RoomEnvironment;
+  try {
+    THREE = await import("three");
+    ({ RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"));
+    ({ RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js"));
+  } catch (e) { return noGL(); }
+  try {
+    // 字体最多等 1.5 秒，等不到就用系统宋体
+    await Promise.race([document.fonts.load("700 78px 'Noto Serif SC'"), new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
+    build(THREE, RoundedBoxGeometry, RoomEnvironment);
+  } catch (e) { console.warn("书架加载失败，首页改用列表", e); noGL(); }
+})();
+
+/* ───────── 封面：每本书一幅画 ───────── */
+const SERIF = "'Noto Serif SC','Songti SC','STSong','Source Han Serif SC',serif";
+const SANS = "-apple-system,'PingFang SC','Noto Sans SC',sans-serif";
+const CW = 768, CH = 1024;
+
+function rr(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+const artPage = (g) => {               // 一层层往里收的窗口：页面是一层层搭出来的
+  const fills = ["#F9C0AE", "#F4A292", "#EE8579", "#F6B4A2", "#FBD7C0", "#FFF0E2"];
+  fills.forEach((c, k) => {
+    const w = 440 - k * 62, h = 560 - k * 78, x = 384 - w / 2, y = 130 + k * 22;
+    g.fillStyle = c; rr(g, x, y, w, h, 34 - k * 3); g.fill();
+    g.strokeStyle = "rgba(120,40,30,.18)"; g.lineWidth = 3; g.stroke();
+  });
+  g.fillStyle = "#C4503A"; rr(g, 330, 400, 108, 150, 18); g.fill();
+  g.strokeStyle = "#FFF3E6"; g.lineWidth = 8; g.lineCap = "round"; g.lineJoin = "round";
+  g.beginPath(); g.moveTo(352, 478); g.lineTo(378, 504); g.lineTo(418, 450); g.stroke();
+};
+const artSeal = (g) => {               // 印章 + 刻度：功课卡的盖章
+  const cx = 384, cy = 410, ink = "#244265";
+  g.strokeStyle = ink; g.lineWidth = 4;
+  g.beginPath(); g.arc(cx, cy, 262, 0, 7); g.stroke();
+  g.lineWidth = 3;
+  for (let k = 0; k < 90; k++) {
+    const a = (k / 90) * Math.PI * 2, l = k % 5 === 0 ? 26 : 13;
+    g.beginPath(); g.moveTo(cx + Math.cos(a) * 262, cy + Math.sin(a) * 262); g.lineTo(cx + Math.cos(a) * (262 - l), cy + Math.sin(a) * (262 - l)); g.stroke();
+  }
+  g.beginPath(); g.arc(cx, cy, 190, 0, 7); g.stroke();
+  g.fillStyle = "rgba(244,248,251,.75)"; g.beginPath(); g.arc(cx, cy, 160, 0, 7); g.fill();
+  g.save(); g.translate(cx, cy); g.rotate(-0.5);
+  g.fillStyle = ink; g.beginPath(); g.moveTo(0, -150); g.lineTo(26, 0); g.lineTo(0, 150); g.lineTo(-26, 0); g.closePath(); g.fill();
+  g.fillStyle = "#E7A15F"; g.beginPath(); g.moveTo(0, -150); g.lineTo(26, 0); g.lineTo(-26, 0); g.closePath(); g.fill();
+  g.restore();
+  g.fillStyle = "#F4F8FB"; g.beginPath(); g.arc(cx, cy, 14, 0, 7); g.fill();
+};
+const artWave = (g) => {               // 声波：一块奶白的板，里面是一排高低起伏的竖条
+  g.fillStyle = "#F3EDE1"; rr(g, 114, 190, 540, 470, 44); g.fill();
+  const n = 19, bw = 17, gap = 12, total = n * bw + (n - 1) * gap, x0 = 384 - total / 2;
+  for (let k = 0; k < n; k++) {
+    const t = (k - (n - 1) / 2) / ((n - 1) / 2);
+    const h = 70 + 250 * Math.pow(Math.cos(t * 1.25), 2) * (0.55 + 0.45 * Math.abs(Math.sin(k * 1.7)));
+    g.fillStyle = k === 12 ? "#E0803F" : "#1F3E9A";
+    rr(g, x0 + k * (bw + gap), 425 - h / 2, bw, h, 8); g.fill();
+  }
+  g.fillStyle = "#1F3E9A"; g.globalAlpha = .25; g.fillRect(150, 620, 468, 4); g.globalAlpha = 1;
+};
+const artFan = (g) => {                // 折扇：古装台词，一把展开的扇子
+  const px = 384, py = 640, R = 360, a0 = Math.PI * 1.17, a1 = Math.PI * 1.83;
+  g.fillStyle = "#F5E8C8"; g.beginPath(); g.moveTo(px, py); g.arc(px, py, R, a0, a1); g.closePath(); g.fill();
+  g.fillStyle = "#D9B25C"; g.beginPath(); g.moveTo(px, py); g.arc(px, py, 110, a0, a1); g.closePath(); g.fill();
+  g.strokeStyle = "#3A2619"; g.lineWidth = 3;
+  for (let k = 0; k <= 14; k++) { const a = a0 + (a1 - a0) * (k / 14); g.beginPath(); g.moveTo(px + Math.cos(a) * 110, py + Math.sin(a) * 110); g.lineTo(px + Math.cos(a) * R, py + Math.sin(a) * R); g.stroke(); }
+  g.lineWidth = 9; g.beginPath(); g.arc(px, py, R, a0, a1); g.stroke();
+  g.lineWidth = 4; g.beginPath(); g.arc(px, py, 110, a0, a1); g.stroke();
+  g.fillStyle = "#B8432E";
+  [[330, 360, 15], [392, 318, 11], [452, 372, 13], [300, 420, 9], [430, 430, 8]].forEach(([x, y, r]) => { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
+  g.strokeStyle = "#3A2619"; g.lineWidth = 5; g.lineCap = "round";
+  g.beginPath(); g.moveTo(250, 520); g.quadraticCurveTo(330, 440, 392, 318); g.quadraticCurveTo(420, 350, 452, 372); g.stroke();
+  g.fillStyle = "#3A2619"; g.beginPath(); g.arc(px, py, 20, 0, 7); g.fill();
+};
+const artContour = (g) => {            // 等高线：一个人，从外到内一圈圈长出来
+  const cx = 384, cy = 410;
+  for (let k = 15; k >= 0; k--) {
+    g.beginPath();
+    for (let s = 0; s <= 120; s++) {
+      const a = (s / 120) * Math.PI * 2;
+      const r = (26 + k * 17) * (1 + 0.11 * Math.sin(3 * a + k * 0.35) + 0.07 * Math.sin(5 * a - k * 0.28) + 0.04 * Math.sin(2 * a + 1));
+      const x = cx + Math.cos(a) * r * 1.05, y = cy + Math.sin(a) * r * 1.25;
+      s ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    if (k === 0) { g.fillStyle = "#F5B5A3"; g.fill(); }
+    g.strokeStyle = k % 3 === 0 ? "rgba(251,239,242,.75)" : "rgba(251,239,242,.32)";
+    g.lineWidth = k % 3 === 0 ? 4 : 2.5; g.stroke();
+  }
+};
+const ART = { page: artPage, seal: artSeal, wave: artWave, fan: artFan, contour: artContour };
+
+function drawCover(it) {
+  const c = document.createElement("canvas"); c.width = CW; c.height = CH;
+  const g = c.getContext("2d");
+  const gr = g.createLinearGradient(0, 0, CW, CH);
+  gr.addColorStop(0, "rgba(255,255,255,.14)"); gr.addColorStop(.5, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(0,0,0,.18)");
+  g.fillStyle = it.bg; g.fillRect(0, 0, CW, CH);
+  g.fillStyle = gr; g.fillRect(0, 0, CW, CH);
+  for (let k = 0; k < 9000; k++) {       // 布面颗粒
+    g.fillStyle = Math.random() < .5 ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.05)";
+    g.fillRect(Math.random() * CW, Math.random() * CH, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  ART[it.art](g);
+  g.fillStyle = it.fg; g.globalAlpha = .85; g.textBaseline = "alphabetic"; g.textAlign = "left";
+  g.font = `600 40px ${SANS}`; g.fillText(it.cap, 62, 92); g.globalAlpha = 1;
+  let fs = 84; g.font = `700 ${fs}px ${SERIF}`;
+  while (g.measureText(it.name).width > CW - 124 && fs > 40) { fs -= 2; g.font = `700 ${fs}px ${SERIF}`; }
+  g.fillText(it.name, 62, 930);
+  g.globalAlpha = .55; g.fillRect(62, 962, 90, 3); g.globalAlpha = 1;
+  const hg = g.createLinearGradient(40, 0, 96, 0);   // 书脊的折痕
+  hg.addColorStop(0, "rgba(0,0,0,0)"); hg.addColorStop(.45, "rgba(0,0,0,.22)"); hg.addColorStop(.62, "rgba(255,255,255,.12)"); hg.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = hg; g.fillRect(40, 0, 56, CH);
+  return c;
+}
+
+/* ───────── 三维场景 ───────── */
+const clamp0 = (v, max) => Math.max(0, Math.min(max, v));
+function build(THREE, RoundedBoxGeometry, RoomEnvironment) {
+  const yt = window.yt, items = yt.items, N = items.length;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const W = stage.clientWidth || 390, H = stage.clientHeight || 372;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.55;
+
+  const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 60);
+  camera.position.set(0, 0.5, 8.3);
+  camera.lookAt(0, 0.0, 0);
+
+  const key = new THREE.DirectionalLight(0xfff1dc, 2.3);
+  key.position.set(-3.2, 5.2, 6.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -7; key.shadow.camera.right = 7; key.shadow.camera.top = 5; key.shadow.camera.bottom = -4;
+  key.shadow.camera.near = 1; key.shadow.camera.far = 20;
+  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; key.shadow.radius = 5;
+  scene.add(key);
+  scene.add(new THREE.AmbientLight(0x8fa0c8, 0.25));
+
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(40, 14), new THREE.MeshStandardMaterial({ color: 0x232A3D, roughness: 1 }));
+  wall.position.set(0, 1, -1.1); wall.receiveShadow = true; scene.add(wall);
+
+  const wc = document.createElement("canvas"); wc.width = 1024; wc.height = 128;
+  const wg = wc.getContext("2d");
+  wg.fillStyle = "#3A2A23"; wg.fillRect(0, 0, 1024, 128);
+  for (let k = 0; k < 90; k++) {
+    wg.strokeStyle = `rgba(${Math.random() < .5 ? "20,12,8" : "110,80,60"},${.05 + Math.random() * .1})`;
+    wg.lineWidth = .6 + Math.random() * 1.6;
+    const y = Math.random() * 128; wg.beginPath(); wg.moveTo(0, y); wg.bezierCurveTo(300, y + (Math.random() - .5) * 10, 700, y + (Math.random() - .5) * 10, 1024, y + (Math.random() - .5) * 8); wg.stroke();
+  }
+  const woodTex = new THREE.CanvasTexture(wc); woodTex.colorSpace = THREE.SRGBColorSpace; woodTex.wrapS = THREE.RepeatWrapping; woodTex.repeat.set(2, 1);
+  const board = new THREE.Mesh(new RoundedBoxGeometry(18, 0.34, 2.0, 3, 0.03), new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.55, metalness: 0.02 }));
+  board.position.set(0, -1.05 - 0.17, 0.3); board.receiveShadow = true; scene.add(board);
+  const apron = new THREE.Mesh(new THREE.BoxGeometry(40, 8, 0.4), new THREE.MeshStandardMaterial({ color: 0x2A1E19, roughness: 0.8 }));
+  apron.position.set(0, -1.05 - 0.34 - 4, 1.2); apron.receiveShadow = true; scene.add(apron);
+
+  const BW = 1.5, BH = 2.1, T = 0.035, PD = 0.2;
+  const pageTex = (() => {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 256; const g = c.getContext("2d");
+    g.fillStyle = "#EFE8D9"; g.fillRect(0, 0, 64, 256);
+    for (let y = 0; y < 256; y += 2) { g.fillStyle = `rgba(120,100,70,${.06 + Math.random() * .08})`; g.fillRect(0, y, 64, 1); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const books = items.map((it, i) => {
+    const grp = new THREE.Group();
+    const tex = new THREE.CanvasTexture(drawCover(it));
+    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const edge = new THREE.MeshStandardMaterial({ color: new THREE.Color(it.bg).multiplyScalar(0.72), roughness: 0.7 });
+    const face = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.62, metalness: 0.0 });
+    const front = new THREE.Mesh(new RoundedBoxGeometry(BW, BH, T, 3, 0.014), [edge, edge, edge, edge, face, edge]);
+    front.position.z = PD / 2 + T / 2;
+    const back = new THREE.Mesh(new RoundedBoxGeometry(BW, BH, T, 3, 0.014), edge);
+    back.position.z = -(PD / 2 + T / 2);
+    const spine = new THREE.Mesh(new RoundedBoxGeometry(0.06, BH, PD + 2 * T, 3, 0.016), edge);
+    spine.position.x = -BW / 2 + 0.03;
+    const pages = new THREE.Mesh(new THREE.BoxGeometry(BW - 0.1, BH - 0.09, PD), new THREE.MeshStandardMaterial({ map: pageTex, roughness: 0.9 }));
+    [front, back, spine, pages].forEach((m) => { m.castShadow = true; m.receiveShadow = true; grp.add(m); });
+    grp.userData.index = i;
+    scene.add(grp);
+    return grp;
+  });
+
+  // 轮播：scroll 是一个连续的位置，书按离中心的距离摆放
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  let target = clamp0(yt.picked(), N - 1);
+  let scroll = (reduce || home.hidden) ? target : target - 1.6;     // 直接打开某个功能页再回来时，从那一本开始
+  let dragging = false, sx = 0, s0 = 0, t0 = 0, moved = 0, vel = 0, lx = 0, lt = 0;
+  yt.showPick(target);
+  const place = () => {
+    books.forEach((b, i) => {
+      const d = i - scroll, a = Math.abs(d), s = Math.sign(d), near = Math.min(a, 1);
+      b.position.x = s * (a <= 1 ? a * 1.78 : 1.78 + (a - 1) * 1.45);
+      b.position.z = 0.55 - near * 0.55 - Math.max(0, a - 1) * 0.25;
+      b.rotation.y = clamp(-d * 0.42, -0.62, 0.62);
+      const sc = 1 - near * 0.17; b.scale.setScalar(sc);
+      b.position.y = -1.05 + (BH / 2) * sc;
+    });
+  };
+  const unit = () => (stage.clientWidth || 390) * 0.42;
+  // goTo(i, instant)：instant 用于从功能页回来时，书架直接停在那一本
+  const goTo = (i, instant) => {
+    target = clamp(Math.round(i), 0, N - 1); yt.showPick(target);
+    if (instant) scroll = target;
+  };
+  window.shelfGo = goTo;
+
+  const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+  const hit = (x, y) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    ptr.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ptr, camera);
+    const h = ray.intersectObjects(books, true)[0];
+    if (!h) return -1;
+    let o = h.object; while (o && o.userData.index === undefined) o = o.parent;
+    return o ? o.userData.index : -1;
+  };
+  const el = renderer.domElement;
+  el.addEventListener("pointerdown", (e) => { dragging = true; sx = lx = e.clientX; s0 = scroll; t0 = lt = performance.now(); moved = 0; vel = 0; el.setPointerCapture(e.pointerId); el.style.cursor = "grabbing"; });
+  el.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    moved = Math.max(moved, Math.abs(e.clientX - sx));
+    const now = performance.now(); vel = (e.clientX - lx) / Math.max(1, now - lt); lx = e.clientX; lt = now;
+    scroll = clamp(s0 - (e.clientX - sx) / unit(), -0.3, N - 0.7);
+  });
+  const end = (e) => {
+    if (!dragging) return; dragging = false; el.style.cursor = "grab";
+    if (moved < 8 && performance.now() - t0 < 450) {      // 轻点：点中间那本进入功能页，点旁边的先把它拉到中间
+      const i = hit(e.clientX, e.clientY);
+      if (i === target) yt.open(i); else if (i >= 0) goTo(i);
+      return;
+    }
+    goTo(scroll - vel * 0.9);
+  };
+  el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+  addEventListener("keydown", (e) => {
+    if (home.hidden) return;
+    if (e.key === "ArrowLeft") goTo(target - 1);
+    if (e.key === "ArrowRight") goTo(target + 1);
+    if (e.key === "Enter" && document.activeElement === document.body) yt.open(target);
+  });
+
+  // 按时间缓动：低性能的手机掉帧时，也在同样的时间内滑到位
+  let last = performance.now();
+  (function frame(now) {
+    requestAnimationFrame(frame);
+    const t = now || performance.now(), dt = Math.min(0.25, (t - last) / 1000); last = t;
+    if (home.hidden) return;                                // 在功能页时不画，省电
+    if (!dragging) scroll += (target - scroll) * (reduce ? 1 : 1 - Math.exp(-dt * 8));
+    place(); renderer.render(scene, camera);
+  })(performance.now());
+
+  addEventListener("resize", () => {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+  });
+}
 </script>

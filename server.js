@@ -119,6 +119,15 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
       return res.end(page());
     }
+    // 书架用的 three.js 放在 vendor/ 下，只允许读这个目录里的 .js / 授权文件
+    if (req.method === "GET" && url.pathname.startsWith("/vendor/")) {
+      const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+      const file = path.resolve(DIR, rel);
+      if (!file.startsWith(path.join(DIR, "vendor") + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return send(res, 404, { error: "not found" });
+      const type = file.endsWith(".js") ? "text/javascript; charset=utf-8" : "text/plain; charset=utf-8";
+      res.writeHead(200, { "content-type": type, "cache-control": "public, max-age=86400" });
+      return fs.createReadStream(file).pipe(res);
+    }
     if (req.method === "GET" && url.pathname === "/api/health") {
       return send(res, 200, { ok: true, ai: !!ARK_API_KEY, needCode: !!ACCESS_CODE, label: "豆包" });
     }

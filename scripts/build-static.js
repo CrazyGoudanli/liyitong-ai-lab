@@ -14,4 +14,7 @@ const out = path.join(ROOT, "dist");
 fs.mkdirSync(out, { recursive: true });
 fs.writeFileSync(path.join(out, "index.html"), head + fs.readFileSync(path.join(ROOT, "app.html"), "utf8") + "</body></html>");
 fs.writeFileSync(path.join(out, ".nojekyll"), "");
+// 书架用的 three.js 一起打包，不依赖外部网站（国内也能稳定加载）
+fs.rmSync(path.join(out, "vendor"), { recursive: true, force: true });
+fs.cpSync(path.join(ROOT, "vendor"), path.join(out, "vendor"), { recursive: true });
 console.log("已生成 dist/index.html");
