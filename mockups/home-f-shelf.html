@@ -172,17 +172,28 @@ function showHome() {
   window.dispatchEvent(new Event("resize"));   // 首页重新显示后，3D 画布要重新量尺寸
   window.scrollTo(0, 0);
 }
+/* 先切换页面，再尝试写浏览器历史（让手机的返回手势也能回到首页）。
+   在被隔离的预览窗口里写历史会报错，所以失败了也不影响使用，只是没有返回手势。 */
+let pushed = false;
 function openItem(i) {
-  history.pushState({ f: i }, "", "#f" + i);   // 这样手机的返回手势也能回到首页
   showFunc(i);
+  try { history.pushState({ f: i }, "", "#f" + i); pushed = true; } catch (e) { pushed = false; }
 }
 function goBack() {
-  if (history.state && history.state.f !== undefined) history.back();
-  else { history.replaceState(null, "", location.pathname + location.search); showHome(); }
+  if (pushed) {
+    try {
+      history.back();
+      setTimeout(() => { if (!vFunc.hidden) { pushed = false; showHome(); } }, 400);   // 万一没有触发返回，直接回首页
+      return;
+    } catch (e) { /* 往下走 */ }
+  }
+  pushed = false;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* 忽略 */ }
+  showHome();
 }
 $("#back").addEventListener("click", goBack);
 addEventListener("popstate", (e) => {
-  if (e.state && e.state.f !== undefined) showFunc(e.state.f); else showHome();
+  if (e.state && e.state.f !== undefined) { pushed = true; showFunc(e.state.f); } else { pushed = false; showHome(); }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !vFunc.hidden) goBack(); });
 
