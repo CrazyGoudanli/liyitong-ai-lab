@@ -160,6 +160,12 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .script-list .when { display: block; font-size: 13px; color: var(--ink-3); }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+.cfg { margin-top: 8px; }
+.cfg summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.cfg summary::-webkit-details-marker { display: none; }
+.cfg .cfg-tip { margin-left: auto; color: var(--ink-3); font-size: 14px; }
+.cfg[open] .cfg-tip { display: none; }
+.cfg #cfg-body { padding-bottom: 32px; }
 </style>
 
 <div class="wrap" id="app">
@@ -181,7 +187,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <button class="btn" type="button" data-go="saved">我的收藏</button>
       <button class="btn" type="button" data-go="script">随身话术卡</button>
     </div>
-    <div class="foot"><span class="status-dot" id="dot"></span><span id="mode">正在连接 AI…</span></div>
+    <!-- 页面最底部：点一下展开，直接填 API Key -->
+    <details id="cfg" class="cfg">
+      <summary class="foot"><span class="status-dot" id="dot"></span><span id="mode">正在连接 AI…</span><span class="cfg-tip">设置 ›</span></summary>
+      <div id="cfg-body"></div>
+    </details>
   </section>
 
   <!-- 功能页容器：点书之后进来，左上角返回 -->
@@ -893,7 +903,7 @@ function renderScript(root) {
 }
 
 /* ───────────── 设置：在这台手机上填火山方舟密钥（打开 网址#setup） ───────────── */
-function renderSetup(root) {
+function renderSetup(root, inline) {
   const cur = store.get("ark", {}) || {};
   const field = (id, label, value, type = "text") => {
     const i = el("input", { id, type, value: value || "", autocomplete: "off", spellcheck: "false",
@@ -901,7 +911,7 @@ function renderSetup(root) {
     return [el("label", { class: "label", for: id, text: label }), i];
   };
   const out = el("div", { class: "cards" });
-  root.append(...sceneHead("连接火山方舟", "密钥只存在这台手机的浏览器里，不写进网站代码。换手机或清了浏览器数据，要重新填。"),
+  root.append(...(inline ? [el("p", { class: "lead", text: "密钥只存在这台手机的浏览器里，不写进网站代码。换手机或清了浏览器数据，要重新填。" })] : sceneHead("连接火山方舟", "密钥只存在这台手机的浏览器里，不写进网站代码。换手机或清了浏览器数据，要重新填。")),
     el("div", { class: "panel" },
       ...field("ark-key", "API Key", cur.key, "password"),
       ...field("ark-model", "模型 ID 或接入点 ID", cur.model || ARK_MODEL),
@@ -954,6 +964,11 @@ show();
 
 /* ───────────── 启动 ───────────── */
 renderHome();
+$("#cfg").addEventListener("toggle", (e) => {
+  const box = $("#cfg-body");
+  if (e.target.open && !box.firstChild) renderSetup(box, true);
+  if (e.target.open) setTimeout(() => $("#cfg").scrollIntoView({ block: "end", behavior: "smooth" }), 50);
+});
 initAI();
 const hash = (location.hash || "").slice(1);
 if (SCENES.some(s => s.id === hash)) render("scene", hash);
