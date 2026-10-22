@@ -1,0 +1,886 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head><body><title>一桐的 AI 排练室</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* 版式：一张“通告单”——首页是场次表，每场戏是一页排练本。纸面 + 墨色 + 一点群青。 */
+:root {
+  --paper: #F1F2F4;
+  --sheet: #FFFFFF;
+  --ink: #15171C;
+  --ink-2: #5B606C;
+  --ink-3: #8C919C;
+  --rule: #D8DBE1;
+  --accent: #2D4A8A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E4E9F4;
+  --code-bg: #15171C;
+  --code-fg: #C9D2E6;
+  --font-display: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111318; --sheet: #191C23; --ink: #ECEEF2; --ink-2: #A0A6B2; --ink-3: #737987;
+    --rule: #2B3039; --accent: #9DB3E6; --accent-ink: #111318; --accent-soft: #1E2740;
+    --code-bg: #0B0C10; --code-fg: #B9C4DC; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111318; --sheet: #191C23; --ink: #ECEEF2; --ink-2: #A0A6B2; --ink-3: #737987;
+  --rule: #2B3039; --accent: #9DB3E6; --accent-ink: #111318; --accent-soft: #1E2740;
+  --code-bg: #0B0C10; --code-fg: #B9C4DC; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--paper); }
+body {
+  color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 560px; margin: 0 auto; padding-block: 20px 48px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; text-wrap: balance; margin: 0; letter-spacing: .01em; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--ink-2); }
+.small { font-size: 14px; }
+
+/* ── 首页：通告单 ── */
+.sheet-head { display: grid; gap: 6px; padding-block: 8px 20px; border-bottom: 2px solid var(--ink); }
+.sheet-meta { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--ink-2); letter-spacing: .08em; }
+.sheet-head h1 { font-size: clamp(30px, 8vw, 40px); line-height: 1.2; }
+.sheet-head p { margin: 0; color: var(--ink-2); }
+.calls { list-style: none; margin: 0; padding: 0; }
+.call {
+  display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
+  width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule);
+  padding: 18px 2px;
+}
+.call:hover .call-title, .call:focus-visible .call-title { color: var(--accent); }
+.call-no { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1.3; white-space: nowrap; align-self: start; padding-top: 2px; }
+.call-no b { color: var(--accent); }
+.call-title { font-size: 19px; font-weight: 600; line-height: 1.35; display: block; }
+.call-desc { font-size: 14px; color: var(--ink-2); display: block; margin-top: 2px; }
+.call-time { font-size: 13px; color: var(--ink-3); white-space: nowrap; }
+.tag-first { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); margin-left: 6px; vertical-align: 2px; font-weight: 500; }
+.home-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+.foot { margin-top: 28px; font-size: 13px; color: var(--ink-3); display: grid; gap: 4px; }
+.status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); margin-right: 6px; vertical-align: 1px; }
+.status-dot.on { background: #3F9A62; }
+
+/* ── 按钮 ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; padding: 0 20px; border-radius: var(--radius);
+  border: 1px solid var(--rule); background: var(--sheet); font-size: 17px; font-weight: 600;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--rule); background: var(--sheet); border-radius: 99px;
+  padding: 8px 14px; font-size: 15px; line-height: 1.3; text-align: left;
+}
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* ── 场次页 ── */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--paper); padding-block: 10px; border-bottom: 1px solid var(--rule);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.back { background: none; border: 0; padding: 8px 4px; font-size: 16px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 4px; }
+.topbar .mono { font-size: 13px; color: var(--ink-3); letter-spacing: .06em; }
+.scene { display: grid; gap: 18px; padding-top: 18px; }
+.slug { font-family: var(--font-mono); font-size: 13px; letter-spacing: .12em; color: var(--accent); }
+.scene h2 { font-size: 28px; line-height: 1.25; }
+.scene .lead { margin: 0; color: var(--ink-2); }
+.panel { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.label { font-size: 13px; color: var(--ink-2); letter-spacing: .06em; }
+
+/* 输入区 */
+.say { display: grid; gap: 10px; }
+.say textarea {
+  width: 100%; min-height: 96px; resize: vertical; border: 1px solid var(--rule); border-radius: var(--radius);
+  background: var(--sheet); padding: 12px 14px; font-size: 18px; line-height: 1.55;
+}
+.say-row { display: flex; gap: 10px; }
+.say-row .btn.primary { flex: 1; }
+.mic { width: 52px; padding: 0; flex: none; }
+.mic.rec { background: #C2412F; border-color: #C2412F; color: #fff; }
+.hint { font-size: 13px; color: var(--ink-3); margin: 0; }
+
+/* 结果卡 */
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--radius); padding: 16px 16px 14px; display: grid; gap: 8px; min-width: 0; }
+.card h3 { font-size: 18px; }
+.card p { margin: 0; }
+.card ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; }
+.card-k { font-size: 13px; color: var(--accent); letter-spacing: .08em; font-weight: 600; }
+.cards { display: grid; gap: 10px; }
+.card-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.linkbtn { background: none; border: 0; color: var(--accent); font-size: 15px; padding: 6px 2px; font-weight: 600; }
+.badge-demo { font-size: 12px; color: var(--ink-2); border: 1px dashed var(--rule); border-radius: 6px; padding: 2px 8px; justify-self: start; }
+.thinking { color: var(--ink-2); font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.thinking::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--rule); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 对话 */
+.chat { display: grid; gap: 10px; }
+.bubble { max-width: 88%; padding: 10px 14px; border-radius: 14px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.bubble.ai { background: var(--sheet); border: 1px solid var(--rule); justify-self: start; border-bottom-left-radius: 4px; }
+.bubble.me { background: var(--accent); color: var(--accent-ink); justify-self: end; border-bottom-right-radius: 4px; }
+.bubble .who { display: block; font-size: 12px; color: var(--ink-3); margin-bottom: 2px; }
+.speak-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); background: none; border: 0; padding: 4px 0; }
+
+/* 记者 */
+.q-card { background: var(--ink); color: var(--paper); border-radius: var(--radius); padding: 20px 18px; display: grid; gap: 10px; }
+.q-card .q-no { font-family: var(--font-mono); font-size: 13px; letter-spacing: .1em; opacity: .7; }
+.q-card .q-text { font-family: var(--font-display); font-size: 22px; line-height: 1.45; }
+.q-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* 做网页 */
+.codewin { background: var(--code-bg); color: var(--code-fg); border-radius: var(--radius); padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; height: 220px; overflow: hidden; white-space: pre-wrap; word-break: break-all; position: relative; }
+.codewin-head { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); }
+.phone { border: 1px solid var(--rule); border-radius: 22px; overflow: hidden; background: #fff; max-width: 100%; }
+.phone iframe { display: block; width: 100%; height: 600px; border: 0; background: #fff; }
+
+/* 台词 */
+.line-pick { display: grid; gap: 8px; }
+.line-pick .chip { border-radius: var(--radius); font-family: var(--font-display); font-size: 16px; padding: 10px 14px; }
+.photo-btn { position: relative; overflow: hidden; }
+.photo-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.thumb { max-height: 160px; border-radius: 8px; border: 1px solid var(--rule); justify-self: start; }
+
+/* 弹层 */
+.sheet-modal { position: fixed; inset: 0; background: rgb(0 0 0 / .4); display: grid; place-items: end center; z-index: 20; padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet-modal .panel { width: 100%; max-width: 520px; }
+.sheet-modal input { width: 100%; min-height: 52px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--sheet); padding: 0 14px; font-size: 20px; letter-spacing: .2em; }
+
+/* 话术卡 */
+.script-list { list-style: none; padding: 0; margin: 0; counter-reset: s; display: grid; }
+.script-list li { counter-increment: s; display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.script-list li::before { content: counter(s); font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1.3; }
+.script-list q { quotes: "「" "」"; font-size: 18px; }
+.script-list .when { display: block; font-size: 13px; color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap" id="app">
+
+  <!-- 首页：通告单 -->
+  <section id="v-home" data-view>
+    <header class="sheet-head">
+      <div class="sheet-meta"><span id="today" class="mono">通告单</span><span>只给一桐看</span></div>
+      <h1>一桐的 AI 排练室</h1>
+      <p>五场戏，每场一分钟。点一场，先按“直接试试”。</p>
+    </header>
+    <ol class="calls" id="calls"></ol>
+    <div class="home-links">
+      <button class="btn" type="button" data-go="saved">我的收藏</button>
+      <button class="btn" type="button" data-go="script">随身话术卡</button>
+    </div>
+    <div class="foot">
+      <span><span class="status-dot" id="dot"></span><span id="mode">正在连接 AI…</span></span>
+      <span>只用公开资料。不上传剧本、不评你的表演、不聊外貌。</span>
+    </div>
+  </section>
+
+  <!-- 场次页容器 -->
+  <section id="v-scene" data-view hidden>
+    <div class="topbar">
+      <button class="back" type="button" data-go="home">‹ 通告单</button>
+      <span class="mono" id="scene-no"></span>
+    </div>
+    <div id="scene-body" class="scene"></div>
+  </section>
+</div>
+
+<div class="sheet-modal" id="code-modal" hidden>
+  <form class="panel" id="code-form">
+    <h3>输入访问码</h3>
+    <p class="muted small" style="margin:0">胶布老师会把访问码发给你，只需要输一次。</p>
+    <label class="label" for="code-input">访问码</label>
+    <input id="code-input" inputmode="numeric" autocomplete="off">
+    <button class="btn primary" type="submit">进入</button>
+  </form>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ───────────── 公开角色资料（团队演示前请核对） ───────────── */
+const ROLES = [
+  { name: "黄蓉", show: "《射雕英雄传》（2017）", trait: "机灵、反应快，总能想到别人想不到的办法。" },
+  { name: "陆文昔", show: "《鹤唳华亭》", trait: "外柔内刚，能忍，也能在关键时刻站出来。" },
+  { name: "孟钰", show: "《狂飙》", trait: "记者，直来直去，正义感强，一定要问出真相。" },
+  { name: "宋小鱼", show: "《书卷一梦》", trait: "被丢进剧本里的小演员，不服命运，越挫越有梗。" },
+  { name: "余梦", show: "《美人余》", trait: "从依附别人的全职太太，变成独立的律师，一步步把人生拿回来。" },
+];
+const ROLE_TEXT = ROLES.map(r => `- ${r.name}，${r.show}：${r.trait}`).join("\n");
+const RULES = "规则：用简体中文；不评价她的表演，不打分；不提外貌、身材、年龄；不编造她的经历、剧情或她没说过的话。";
+
+/* ───────────── 小工具 ───────────── */
+const $ = (s, el = document) => el.querySelector(s);
+const el = (tag, props = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null) continue;
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null) n.append(c);
+  return n;
+};
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("ytlab." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("ytlab." + k, JSON.stringify(v)); } catch {} },
+};
+const ICON = {
+  mic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  cam: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
+};
+const iconBtn = (html) => { const s = document.createElement("span"); s.innerHTML = html; return s.firstChild; };
+function parseJSON(text) {
+  try { return JSON.parse(text); } catch {}
+  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/); if (m) { try { return JSON.parse(m[1]); } catch {} }
+  const a = text.indexOf("{"), b = text.lastIndexOf("}");
+  if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch {} }
+  throw { code: "invalid_json" };
+}
+
+/* ───────────── AI 接入：自建服务器（豆包）→ Claude 预览 → 演示模式 ───────────── */
+const AI = { mode: "connecting", sample: null };
+async function initAI() {
+  try {
+    const r = await fetch("api/health", { cache: "no-store" });
+    if (r.ok) { const j = await r.json(); if (j && j.ai) { AI.mode = "server"; AI.label = j.label || "豆包"; return showMode(); } }
+  } catch {}
+  try {
+    if (window.claude && window.claude.use) {
+      const s = await window.claude.use("sample");
+      if (s) { AI.mode = "claude"; AI.sample = s; AI.label = "Claude（预览版）"; return showMode(); }
+    }
+  } catch {}
+  AI.mode = "demo"; showMode();
+}
+function showMode() {
+  const on = AI.mode === "server" || AI.mode === "claude";
+  $("#dot").classList.toggle("on", on);
+  $("#mode").textContent = on ? `AI 已连接：${AI.label}` : AI.mode === "demo" ? "演示模式：AI 没连上，会显示示例结果" : "正在连接 AI…";
+}
+async function waitAI() { for (let i = 0; i < 120 && AI.mode === "connecting"; i++) await new Promise(r => setTimeout(r, 100)); }
+
+async function shrinkImage(file) {
+  const img = await createImageBitmap(file).catch(() => null);
+  if (!img) return file;
+  const k = Math.min(1, 1400 / Math.max(img.width, img.height));
+  const c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return await new Promise(res => c.toBlob(b => res(b || file), "image/jpeg", 0.85));
+}
+const blobToDataURL = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
+
+/** ask({system, messages, json, images, onText, tier, maxTokens, signal}) → string | object */
+async function ask({ system, messages = [], json = false, images = [], onText, tier = "quick", maxTokens = 1500, signal }) {
+  await waitAI();
+  if (AI.mode === "claude") {
+    const turns = [{ role: "user", content: system }, ...messages];
+    const opts = { modelTier: tier, cache: false };
+    if (signal) opts.signal = signal;
+    if (onText) opts.onText = ({ text }) => onText(text);
+    if (images.length) opts.images = images;
+    if (json) return await AI.sample.json(turns, opts);
+    return (await AI.sample(turns, opts)).text;
+  }
+  if (AI.mode === "server") {
+    const body = { messages: [{ role: "system", content: system }, ...messages], maxTokens };
+    if (images.length) body.images = await Promise.all(images.map(blobToDataURL));
+    const r = await fetch("api/chat", {
+      method: "POST", signal,
+      headers: { "content-type": "application/json", "x-access-code": store.get("code", "") },
+      body: JSON.stringify(body),
+    });
+    if (r.status === 401) { askCode(); throw { code: "need_code" }; }
+    if (!r.ok || !r.body) throw { code: "upstream_error" };
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = "", text = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n"); buf = lines.pop();
+      for (const line of lines) {
+        const t = line.trim(); if (!t.startsWith("data:")) continue;
+        const p = t.slice(5).trim(); if (p === "[DONE]") continue;
+        try { const d = JSON.parse(p).choices?.[0]?.delta?.content; if (d) { text += d; onText && onText(text); } } catch {}
+      }
+    }
+    if (!text.trim()) throw { code: "empty_completion" };
+    return json ? parseJSON(text) : text;
+  }
+  throw { code: "demo" };
+}
+const isHardOff = (e) => ["demo", "not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e && e.code);
+
+/* ───────────── 访问码 ───────────── */
+function askCode() {
+  const m = $("#code-modal"); m.hidden = false; setTimeout(() => $("#code-input").focus(), 50);
+}
+$("#code-form").addEventListener("submit", (ev) => {
+  ev.preventDefault(); store.set("code", $("#code-input").value.trim()); $("#code-modal").hidden = true;
+});
+
+/* ───────────── 朗读 ───────────── */
+const TTS = {
+  on: store.get("tts", true),
+  ok: "speechSynthesis" in window,
+  unlock() { if (!this.ok) return; try { const u = new SpeechSynthesisUtterance(""); speechSynthesis.speak(u); } catch {} },
+  say(text) {
+    if (!this.ok || !this.on || !text) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text.replace(/[*#`]/g, ""));
+      u.lang = "zh-CN"; u.rate = 1.02;
+      const v = speechSynthesis.getVoices().find(v => /zh[-_]CN/i.test(v.lang));
+      if (v) u.voice = v;
+      speechSynthesis.speak(u);
+    } catch {}
+  },
+  stop() { try { speechSynthesis.cancel(); } catch {} },
+};
+function speakToggle() {
+  if (!TTS.ok) return null;
+  const b = el("button", { class: "speak-toggle", type: "button", "aria-pressed": String(TTS.on) });
+  const paint = () => { b.textContent = TTS.on ? "AI 回答时朗读：开" : "AI 回答时朗读：关"; b.setAttribute("aria-pressed", String(TTS.on)); };
+  b.addEventListener("click", () => { TTS.on = !TTS.on; store.set("tts", TTS.on); if (!TTS.on) TTS.stop(); paint(); });
+  paint(); return b;
+}
+
+/* ───────────── 说话输入组件 ───────────── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+function sayBox({ value = "", placeholder = "", sendText = "发送", rows, onSend }) {
+  const ta = el("textarea", { placeholder, "aria-label": placeholder || "输入" });
+  ta.value = value; if (rows) ta.style.minHeight = rows + "px";
+  const send = el("button", { class: "btn primary", type: "button", text: sendText });
+  const row = el("div", { class: "say-row" });
+  let rec = null;
+  if (SR && AI.mode !== "claude") {
+    const mic = el("button", { class: "btn mic", type: "button", "aria-label": "说话输入" }, iconBtn(ICON.mic));
+    mic.addEventListener("click", () => {
+      if (rec) { rec.stop(); return; }
+      try {
+        rec = new SR(); rec.lang = "zh-CN"; rec.interimResults = true; rec.continuous = true;
+        const base = ta.value ? ta.value + " " : "";
+        rec.onresult = (e) => { let t = ""; for (const r of e.results) t += r[0].transcript; ta.value = base + t; };
+        rec.onend = () => { rec = null; mic.classList.remove("rec"); };
+        rec.onerror = (e) => { rec = null; mic.classList.remove("rec"); if (e && /not-allowed|service-not-allowed|network/.test(e.error)) { mic.hidden = true; hint.textContent = "点手机键盘上的麦克风，直接说。"; } };
+        rec.start(); mic.classList.add("rec");
+      } catch { rec = null; mic.hidden = true; }
+    });
+    row.append(mic);
+  }
+  row.append(send);
+  const hint = el("p", { class: "hint", text: SR && AI.mode !== "claude" ? "点麦克风说话，说完再点一下。" : "不想打字？点手机键盘上的麦克风，直接说。" });
+  const go = () => { const t = ta.value.trim(); if (!t || send.disabled) return; TTS.unlock(); if (rec) rec.stop(); onSend(t, api); };
+  send.addEventListener("click", go);
+  ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) go(); });
+  const api = {
+    node: el("div", { class: "say" }, ta, row, hint),
+    set busy(v) { send.disabled = v; ta.disabled = v; },
+    clear() { ta.value = ""; },
+    set value(v) { ta.value = v; },
+    get value() { return ta.value; },
+  };
+  return api;
+}
+
+/* ───────────── 收藏 ───────────── */
+function save(item) {
+  const list = store.get("saved", []);
+  list.unshift({ ...item, at: Date.now() });
+  store.set("saved", list.slice(0, 50));
+}
+function saveBtn(item) {
+  const b = el("button", { class: "linkbtn", type: "button", text: "收藏" });
+  b.addEventListener("click", () => { save(typeof item === "function" ? item() : item); b.textContent = "已收藏"; b.disabled = true; });
+  return b;
+}
+const thinking = (t = "AI 正在想…") => el("div", { class: "thinking", text: t });
+const demoBadge = (t = "示例结果：AI 没连上，先看看效果") => el("span", { class: "badge-demo", text: t });
+
+/* ───────────── 场次定义 ───────────── */
+const SCENES = [
+  { id: "web",    no: "一", title: "说一句话，做一个网页", desc: "给粉丝做个“你像我哪个角色”小测试", time: "约 1 分钟", first: true, render: sceneWeb },
+  { id: "pro",    no: "二", title: "和“律师”聊十分钟",    desc: "演新职业前，先认识一个这样的人",     time: "随时可停", render: scenePro },
+  { id: "press",  no: "三", title: "车上的“记者”",        desc: "发布会前，新话题先私下说顺",         time: "5 个问题", render: scenePress },
+  { id: "line",   no: "四", title: "古装台词速懂",         desc: "拍一句台词，看懂意思和讲究",         time: "约 20 秒", render: sceneLine },
+  { id: "bio",    no: "五", title: "回答问题，得到小传",   desc: "不用对着白纸写人物小传",             time: "8 个问题", render: sceneBio },
+];
+
+/* ───────────── 视图切换 ───────────── */
+let current = null;
+function go(view, sceneId) {
+  TTS.stop(); if (current && current.abort) current.abort();
+  document.querySelectorAll("[data-view]").forEach(v => v.hidden = true);
+  if (view === "home") { $("#v-home").hidden = false; }
+  else {
+    $("#v-scene").hidden = false;
+    const body = $("#scene-body"); body.replaceChildren();
+    if (view === "scene") {
+      const s = SCENES.find(x => x.id === sceneId);
+      $("#scene-no").textContent = `第${s.no}场`;
+      current = s.render(body) || null;
+    } else if (view === "saved") { $("#scene-no").textContent = "收藏"; renderSaved(body); }
+    else if (view === "script") { $("#scene-no").textContent = "话术卡"; renderScript(body); }
+  }
+  window.scrollTo(0, 0);
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-go]"); if (t) { e.preventDefault(); go(t.dataset.go); }
+});
+function renderHome() {
+  const d = new Date(); const wk = "日一二三四五六"[d.getDay()];
+  $("#today").textContent = `通告单 · ${d.getMonth() + 1}月${d.getDate()}日 周${wk}`;
+  $("#calls").replaceChildren(...SCENES.map(s => el("li", {},
+    el("button", { class: "call", type: "button", onclick: () => go("scene", s.id) },
+      el("span", { class: "call-no" }, "第", el("b", { text: s.no }), "场"),
+      el("span", {},
+        el("span", { class: "call-title" }, s.title, s.first ? el("span", { class: "tag-first", text: "先看这场" }) : null),
+        el("span", { class: "call-desc", text: s.desc })),
+      el("span", { class: "call-time", text: s.time })))));
+}
+const sceneHead = (slug, title, lead) => [el("div", { class: "slug", text: slug }), el("h2", { text: title }), el("p", { class: "lead", text: lead })];
+
+/* ═════════════ 第一场：说一句话，做一个网页 ═════════════ */
+const WEB_DEFAULT = "帮我做一个测试页，问粉丝 5 个问题，最后告诉他们最像我演过的哪个角色。";
+const WEB_TWEAKS = ["换成淡蓝色", "题目再有趣一点", "结果页加一句角色的话", "按钮再大一点"];
+function webPrompt(need, prev) {
+  const head = `你是一位很会做手机网页的设计师。请做一个完整、能直接运行的单文件 HTML 页面。
+要求：
+- 只用内联 CSS 和 JS，不引用任何外部资源（字体、图片、脚本、CDN 都不要）。
+- 手机竖屏优先，简体中文，字号大，按钮好点；风格简洁、有质感，配色克制。
+- 页面主人是演员李一桐，这是她给粉丝的小互动。
+- 只能使用下面的公开角色资料，不要编造剧情或台词出处。
+- 只输出代码，放在一个 \`\`\`html 代码块里，前后不要写解释。
+公开角色资料：
+${ROLE_TEXT}`;
+  if (!prev) return `${head}\n\n需求：${need}`;
+  return `${head}\n\n这是当前页面的完整代码：\n\`\`\`html\n${prev}\n\`\`\`\n\n请按这条修改意见改好，输出改完后的完整代码：${need}`;
+}
+const extractHTML = (t) => {
+  const m = t.match(/```html\s*([\s\S]*?)(```|$)/i); if (m) return m[1];
+  const i = t.search(/<!doctype|<html/i); return i >= 0 ? t.slice(i) : t;
+};
+function sceneWeb(root) {
+  let html = null, ctl = null;
+  const preview = el("div", { class: "cards" });
+  const box = sayBox({ value: WEB_DEFAULT, sendText: "直接做", onSend: (t) => build(t) });
+  const tweakWrap = el("div", { class: "panel", hidden: "" },
+    el("div", { class: "label", text: "想改哪里？说一句就行" }),
+    el("div", { class: "chips" }, WEB_TWEAKS.map(t => el("button", { class: "chip", type: "button", text: t, onclick: () => { box.value = t; build(t); } }))));
+  root.append(...sceneHead("SC.01 · 内 · 工作室", "说一句话，做一个网页", "你只说想要什么，AI 当场把网页写出来。做好就能点着玩。"),
+    el("div", { class: "panel" }, el("div", { class: "label", text: "你想做什么网页？" }), box.node), preview, tweakWrap);
+
+  async function build(need) {
+    ctl && ctl.abort(); ctl = new AbortController();
+    box.busy = true;
+    const code = el("div", { class: "codewin", "aria-live": "off" });
+    const head = el("div", { class: "codewin-head" }, el("span", { text: "AI 正在写代码" }), el("span", { class: "mono", text: "0 行" }));
+    const wait = thinking(html ? "正在按你说的改…" : "AI 正在构思页面…");
+    preview.replaceChildren(wait);
+    let shown = false;
+    try {
+      const text = await ask({
+        system: webPrompt(need, html), tier: "quick", maxTokens: 8000, signal: ctl.signal,
+        onText: (t) => {
+          if (!shown) { preview.replaceChildren(head, code); shown = true; }
+          const src = extractHTML(t); const lines = src.split("\n");
+          head.lastChild.textContent = lines.length + " 行";
+          code.textContent = lines.slice(-14).join("\n");
+        },
+      });
+      const out = extractHTML(text);
+      if (!/<\/html>|<\/body>|<\/script>|<\/div>/i.test(out)) throw { code: "incomplete" };
+      html = out; show(false);
+    } catch (e) {
+      if (e && e.code === "cancelled") return;
+      html = FALLBACK_QUIZ; show(true);
+    } finally { box.busy = false; }
+  }
+  function show(isDemo) {
+    const frame = el("iframe", { sandbox: "allow-scripts", title: "AI 做的网页" });
+    frame.srcdoc = html;
+    const keep = html;
+    preview.replaceChildren(
+      isDemo ? demoBadge("示例网页：AI 没连上，这是提前做好的版本") : el("div", { class: "label", text: "做好了，直接点着玩" }),
+      el("div", { class: "phone" }, frame),
+      el("div", { class: "card-actions" }, saveBtn(() => ({ type: "web", title: "粉丝测试页", html: keep }))));
+    tweakWrap.hidden = false;
+  }
+  return { abort: () => ctl && ctl.abort() };
+}
+
+/* ═════════════ 第二场：和“律师”聊 ═════════════ */
+const PROS = [
+  { key: "lawyer", who: "律师", for: "《美人余》余梦", persona: "一位做了十年婚姻家事案件的中国执业律师，女性，说话干脆、有温度",
+    hello: "你好，我做婚姻家事律师快十年了。演律师，先别急着背术语，先看我们怎么听当事人说话。你想先聊哪一块？",
+    asks: ["你见当事人，第一句话说什么？", "开庭前一晚你在干嘛？", "律师站着说话有什么习惯？", "你最常对当事人说的一句话是？"] },
+  { key: "reporter", who: "记者", for: "《狂飙》孟钰", persona: "一位跑社会新闻十年的调查记者，说话快、好奇心重",
+    hello: "你好，我跑社会新闻十来年了。想知道记者平时怎么找线索、怎么问问题，尽管问。",
+    asks: ["你怎么让不想开口的人说话？", "记者包里一定会带什么？", "遇到危险你怎么办？"] },
+  { key: "boss", who: "老板", for: "《金枝》陈雀儿", persona: "一位白手起家、开了十几年酒楼和成衣铺的女老板，精明、爽快",
+    hello: "哟，来学做生意？我开酒楼开了十几年，从一张桌子做起。想问啥就问。",
+    asks: ["做生意第一步做什么？", "怎么看一个伙计靠不靠谱？", "被人坑过吗？后来怎么办？"] },
+];
+const PRO_DEMO = {
+  lawyer: ["见当事人，我一般先不问案子，先问一句“您今天怎么过来的”，让对方松下来。真正有用的信息，常常是闲聊里漏出来的。",
+    "开庭前一晚，我会把要问的问题写在一张纸上，最多七个。写多了，人在庭上反而慌。",
+    "站着说话时手里通常有一支笔或一页纸，方便随时指证据。你演的时候可以试试手里一直有东西。"],
+  reporter: ["不想开口的人，我先不提问，先陪着待一会儿，聊点不相干的。人放松了，话自己就出来了。", "录音笔、充电宝、两支笔，还有一包纸巾。纸巾有时候比问题还管用。"],
+  boss: ["做生意第一步，先站在门口看三天，看谁进谁出、买什么、说什么。", "看伙计，就看他没人盯着的时候，桌子擦不擦干净。"],
+};
+const PRO_CARD_DEMO = {
+  "常用说法": ["我们先把事实和情绪分开说", "这个证据能证明什么、不能证明什么", "您最想要的结果是什么，底线在哪"],
+  "习惯动作": ["手里常拿笔或文件", "说关键句前会停半拍", "听当事人说话时边听边记，很少打断"],
+  "一天怎么过": "上午见当事人或开庭，下午写材料、整理证据，晚上回消息，准备第二天要问的问题。",
+  "可以问剧组顾问的问题": ["家事律师开庭穿什么", "律师和当事人吵架时怎么收场"],
+};
+function scenePro(root) {
+  let pro = PROS[0], turns = [], ctl = null, demoI = 0;
+  const chat = el("div", { class: "chat", "aria-live": "polite" });
+  const pick = el("div", { class: "chips" });
+  const askChips = el("div", { class: "chips" });
+  const out = el("div", { class: "cards" });
+  const box = sayBox({ placeholder: "想问她什么？", onSend: (t) => send(t) });
+  const cardBtn = el("button", { class: "btn", type: "button", text: "把聊的内容整理成功课卡", onclick: () => makeCard() });
+  root.append(...sceneHead("SC.02 · 内 · 律所", "和“律师”聊十分钟", "AI 扮成这个职业的人，用说话和你聊。聊完一键整理成功课卡。"),
+    el("div", { class: "panel" }, el("div", { class: "label", text: "这次想认识谁？" }), pick, speakToggle()),
+    chat, el("div", { class: "panel" }, el("div", { class: "label", text: "可以这样问" }), askChips, box.node), cardBtn, out);
+
+  function setPro(p) {
+    ctl && ctl.abort(); TTS.stop();
+    pro = p; turns = []; demoI = 0; out.replaceChildren();
+    pick.replaceChildren(...PROS.map(x => el("button", { class: "chip", type: "button", "aria-pressed": String(x === p), text: `${x.who}（${x.for}）`, onclick: () => setPro(x) })));
+    askChips.replaceChildren(...p.asks.map(a => el("button", { class: "chip", type: "button", text: a, onclick: () => send(a) })));
+    chat.replaceChildren(bubble("ai", p.hello));
+    turns.push({ role: "assistant", content: p.hello });
+  }
+  function bubble(who, text) {
+    return el("div", { class: "bubble " + who }, el("span", { class: "who", text: who === "ai" ? pro.who : "我" }), el("span", { text }));
+  }
+  const sys = () => `你在扮演${pro.persona}。对面是演员李一桐，她准备演一个${pro.who}角色（${pro.for}），来找你了解这一行。
+像真人聊天一样口语化回答，每次最多三句话，可以讲一个具体的小细节或小习惯；偶尔反问她一个问题。不要用列表和 markdown。
+${RULES}`;
+  async function send(text) {
+    TTS.unlock(); box.busy = true; box.clear();
+    chat.append(bubble("me", text)); turns.push({ role: "user", content: text });
+    const reply = bubble("ai", ""); const t = reply.lastChild; t.textContent = "…"; chat.append(reply);
+    reply.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    ctl = new AbortController();
+    try {
+      const msgs = turns[0].role === "assistant" ? [{ role: "user", content: "你好" }, ...turns] : turns;
+      const ans = await ask({ system: sys(), messages: msgs, tier: "quick", signal: ctl.signal, onText: (x) => { t.textContent = x; } });
+      t.textContent = ans; turns.push({ role: "assistant", content: ans }); TTS.say(ans);
+    } catch (e) {
+      if (e && e.code === "cancelled") return;
+      const list = PRO_DEMO[pro.key]; const ans = list[demoI++ % list.length];
+      t.textContent = ans; reply.append(el("span", { class: "who", text: "（示例回答，AI 没连上）" }));
+      turns.push({ role: "assistant", content: ans }); TTS.say(ans);
+    } finally { box.busy = false; }
+  }
+  async function makeCard() {
+    cardBtn.disabled = true; out.replaceChildren(thinking("正在整理功课卡…"));
+    const talk = turns.map(x => `${x.role === "user" ? "演员" : pro.who}：${x.content}`).join("\n");
+    let data, demo = false;
+    try {
+      data = await ask({ json: true, tier: "quick", system: `下面是演员和一位${pro.who}的聊天记录。请整理成一张给演员看的职业功课卡，帮她演好${pro.for}。
+只回复一个 JSON 对象，格式：{"常用说法":["…"],"习惯动作":["…"],"一天怎么过":"…","可以问剧组顾问的问题":["…"]}，每个列表 2-4 条，每条一句话。
+可以补充这个职业的常识，但要标注为通用情况，不要编造剧情。${RULES}\n\n聊天记录：\n${talk}`, messages: [{ role: "user", content: "请整理。" }] });
+    } catch (e) { data = PRO_CARD_DEMO; demo = true; }
+    out.replaceChildren(renderObjCard(`${pro.who}功课卡 · ${pro.for}`, data, demo, "pro"));
+    cardBtn.disabled = false;
+  }
+  setPro(PROS[0]);
+  return { abort: () => ctl && ctl.abort() };
+}
+function renderObjCard(title, data, demo, type) {
+  const c = el("div", { class: "card" }, demo ? demoBadge() : null, el("h3", { text: title }));
+  for (const [k, v] of Object.entries(data || {})) {
+    c.append(el("div", { class: "card-k", text: k }));
+    if (Array.isArray(v)) c.append(el("ul", {}, v.map(x => el("li", { text: typeof x === "string" ? x : JSON.stringify(x) }))));
+    else c.append(el("p", { text: String(v) }));
+  }
+  c.append(el("div", { class: "card-actions" }, saveBtn({ type, title, data })));
+  c.append(el("p", { class: "hint", text: "专业细节以剧组顾问或真实从业者为准。" }));
+  return c;
+}
+
+/* ═════════════ 第三场：车上的“记者” ═════════════ */
+const PRESS = [
+  { key: "launch", name: "《美人余》发布会", qs: [
+    "这次演余梦，从全职太太到律师，你觉得最难演的是哪一段？",
+    "新剧海报上署名是“李雪（李一桐）”，大家都在聊，你自己怎么看？",
+    "最近很多人在讨论 AI，你会担心演员被 AI 替代吗？",
+    "余梦和姐妹们的关系，有没有让你想到自己生活里的人？",
+    "如果用一句话推荐这部剧，你会怎么说？"] },
+  { key: "daily", name: "日常专访", qs: [
+    "出道这么多年，你还想尝试什么样的新角色？",
+    "拍戏这么忙，你给自己充电的方式是什么？",
+    "舞蹈和书法，对你演戏有什么帮助？",
+    "最近有没有学一样新东西？",
+    "你会怎么形容现在的自己？"] },
+];
+function scenePress(root) {
+  let set = PRESS[0], i = 0, ctl = null;
+  const pick = el("div", { class: "chips" });
+  const qNo = el("div", { class: "q-no" }), qText = el("div", { class: "q-text" });
+  const out = el("div", { class: "cards" });
+  const box = sayBox({ placeholder: "按你平时说话的方式回答就行", sendText: "帮我整理要点", onSend: (t) => sum(t) });
+  const q = el("div", { class: "q-card" }, qNo, qText,
+    el("div", { class: "q-actions" },
+      el("button", { class: "btn ghost", type: "button", style: "color:inherit;border-color:currentColor", text: "再问一遍", onclick: () => { TTS.unlock(); TTS.on = true; TTS.say(set.qs[i]); } }),
+      el("button", { class: "btn ghost", type: "button", style: "color:inherit;border-color:currentColor", text: "下一题", onclick: () => { i = (i + 1) % set.qs.length; paint(true); } })));
+  root.append(...sceneHead("SC.03 · 内 · 保姆车", "车上的“记者”", "AI 扮记者问你五个问题。你随便说，它帮你理成两三个要点。说错了也没人看见。"),
+    el("div", { class: "panel" }, el("div", { class: "label", text: "今天去哪？" }), pick, speakToggle()),
+    q, el("div", { class: "panel" }, el("div", { class: "label", text: "你的回答" }), box.node), out,
+    el("p", { class: "hint", text: "口径以宣传团队为准。AI 只帮你理顺自己说的话，不打分，也不替你想观点。" }));
+
+  function setSet(s) { set = s; i = 0; pick.replaceChildren(...PRESS.map(x => el("button", { class: "chip", type: "button", "aria-pressed": String(x === s), text: x.name, onclick: () => setSet(x) }))); paint(false); }
+  function paint(speak) {
+    ctl && ctl.abort(); out.replaceChildren(); box.clear();
+    qNo.textContent = `记者提问 ${i + 1} / ${set.qs.length}`; qText.textContent = set.qs[i];
+    if (speak) TTS.say(set.qs[i]);
+  }
+  async function sum(ans) {
+    box.busy = true; out.replaceChildren(thinking("正在帮你理顺…")); ctl = new AbortController();
+    let data, demo = false;
+    try {
+      data = await ask({ json: true, tier: "quick", signal: ctl.signal, system: `你在帮演员李一桐准备采访。记者问：「${set.qs[i]}」
+下面是她口头随便说的回答。请只用她说过的意思，帮她理成能在镜头前说的样子。
+只回复一个 JSON 对象：{"要点":["…","…"],"一句话版本":"…"}。要点 2-3 条，每条不超过 25 字；一句话版本不超过 40 字，保留她的语气。
+不加她没说过的观点，不评价好坏。${RULES}`, messages: [{ role: "user", content: ans }] });
+    } catch (e) {
+      if (e && e.code === "cancelled") { box.busy = false; return; }
+      demo = true; data = { "你刚才说的": [ans.slice(0, 80) + (ans.length > 80 ? "…" : "")], "提示": "连上 AI 后，这里会变成 2-3 个要点和一句话版本。" };
+    }
+    const c = renderObjCard(set.qs[i], data, demo, "press");
+    c.querySelector(".hint").textContent = "可以再按“再问一遍”，换个说法试试。";
+    out.replaceChildren(c); box.busy = false;
+  }
+  setSet(PRESS[0]);
+  return { abort: () => ctl && ctl.abort() };
+}
+
+/* ═════════════ 第四场：古装台词速懂 ═════════════ */
+const LINES = [
+  { t: "妾身蒲柳之姿，怎敢高攀。", demo: { "白话": "我出身普通、资质平平，哪敢高攀您。",
+    "典故和讲究": "“蒲柳之姿”出自《世说新语》：顾悦对简文帝说自己“蒲柳之姿，望秋而落”。蒲柳一到秋天最先落叶，用来比喻体弱或身份低微，后来多用作女子自谦。",
+    "人物这时候会怎么做": "自谦的话，常配合垂眼、微微侧身或行礼，语气可以是真谦虚，也可以是带刺的推辞。", "读音提醒": ["蒲 pú"] } },
+  { t: "今日之事，权当是我还你当年一饭之恩。", demo: { "白话": "今天帮你这件事，就当是还你当年给我饭吃的恩情。",
+    "典故和讲究": "“一饭之恩”出自韩信的故事：韩信年轻时落魄，河边漂洗丝絮的老妇人给他饭吃，他封王后以千金相报。比喻再小的恩情也要还。",
+    "人物这时候会怎么做": "这句常带着“从此两清”的意思，语气可以淡一点，不愿再多欠对方。", "读音提醒": [] } },
+  { t: "臣女不敢妄议朝政，只是此事关乎家父清白，还望殿下明察。", demo: { "白话": "我不敢随便评论朝廷的事，只是这件事关系到我父亲是否清白，希望殿下查清楚。",
+    "典故和讲究": "“臣女”是官员之女在皇族面前的自称。古代女子议论朝政是忌讳，所以先撇清，再求情，是以退为进的说法。",
+    "人物这时候会怎么做": "通常先行礼、低头说前半句；说到“还望殿下明察”时可以抬眼，显出恳切。", "读音提醒": [] } },
+  { t: "既已落子，便无悔棋之理。", demo: { "白话": "已经做了决定，就没有反悔的道理。",
+    "典故和讲究": "用下棋比喻做决定。“落子无悔”是棋局规矩，引申为做了选择就要承担后果。",
+    "人物这时候会怎么做": "常配合一个停顿和坚定的目光；如果是在下棋的戏里，可以落子后手指在棋子上停一下再收回。", "读音提醒": [] } },
+];
+function sceneLine(root) {
+  let photo = null, ctl = null;
+  const out = el("div", { class: "cards" });
+  const thumb = el("img", { class: "thumb", alt: "你拍的台词", hidden: "" });
+  const box = sayBox({ placeholder: "或者把台词打在这里", sendText: "看懂它", onSend: (t) => explain(t, null) });
+  const file = el("input", { type: "file", accept: "image/*", capture: "environment", "aria-label": "拍一句台词" });
+  const camBtn = el("label", { class: "btn photo-btn" }, iconBtn(ICON.cam), "拍一句台词", file);
+  file.addEventListener("change", async () => {
+    const f = file.files && file.files[0]; if (!f) return;
+    photo = await shrinkImage(f); thumb.src = URL.createObjectURL(photo); thumb.hidden = false;
+    explain("", photo);
+  });
+  root.append(...sceneHead("SC.04 · 内 · 化妆间", "古装台词速懂", "看不懂的台词，拍一句或点一句。白话意思、典故、人物这时候怎么做，一次看全。"),
+    el("div", { class: "panel" }, el("div", { class: "label", text: "先点一句示例试试" }),
+      el("div", { class: "line-pick" }, LINES.map(l => el("button", { class: "chip", type: "button", text: l.t, onclick: () => explain(l.t, null, l.demo) })))),
+    el("div", { class: "panel" }, el("div", { class: "label", text: "换你的台词" }), camBtn, thumb, box.node,
+      el("p", { class: "hint", text: "一次只拍一句，别拍整页。还没播的戏，先问过剧组再拍。" })),
+    out);
+
+  async function explain(text, img, demoData) {
+    ctl && ctl.abort(); ctl = new AbortController(); TTS.unlock();
+    out.replaceChildren(thinking("正在看这句台词…")); box.busy = true;
+    let data, demo = false;
+    try {
+      data = await ask({ json: true, tier: "quick", signal: ctl.signal, images: img ? [img] : [],
+        system: `你是古装剧的台词老师，在帮演员李一桐理解一句台词。${img ? "台词在图片里，只看其中一句最主要的台词。" : ""}
+只回复一个 JSON 对象：{"台词":"…","白话":"…","典故和讲究":"…","人物这时候会怎么做":"…","读音提醒":["字 拼音"]}。
+每项一两句话，口语化。典故不确定就写“没有明确出处”，不要编。读音提醒只列容易读错的字，没有就给空数组。${RULES}`,
+        messages: [{ role: "user", content: img ? "请看图片里的台词。" : `台词：${text}` }] });
+    } catch (e) {
+      if (e && e.code === "cancelled") { box.busy = false; return; }
+      demo = true;
+      data = demoData || { "提示": "AI 没连上。连上以后，这里会解释你拍的或输入的这句台词。先点上面的示例看看效果。" };
+    }
+    const title = data["台词"] || text || "这句台词"; delete data["台词"];
+    if (Array.isArray(data["读音提醒"]) && !data["读音提醒"].length) delete data["读音提醒"];
+    const c = renderObjCard(title, data, demo, "line");
+    c.querySelector(".hint").textContent = "读音以台词老师为准，重要典故请再核对。";
+    out.replaceChildren(c); box.busy = false;
+  }
+  return { abort: () => ctl && ctl.abort() };
+}
+
+/* ═════════════ 第五场：回答问题，得到小传 ═════════════ */
+const BIO_ROLE = "余梦（《美人余》）：三十岁上下，结婚后做了多年全职太太，婚姻出了问题后，从依附型的“娇妻”一步步变成独立律师，还要和丈夫争财产。她是余家四姐妹之一。（据公开简介）";
+const BIO_QS = ["她结婚前，是做什么的？", "她当全职太太那几年，一天里最期待哪个时刻？", "她第一次发现婚姻出问题，是因为一件什么小事？",
+  "她决定去当律师，是谁或者哪句话推了她一把？", "她最怕别人怎么评价她？", "四姐妹里，谁最懂她？", "她赢下第一个案子那天晚上，会做什么？", "如果用一件东西代表她，你会选什么？"];
+const BIO_N = 8;
+function sceneBio(root) {
+  let role = BIO_ROLE, qa = [], ctl = null, curQ = "";
+  const chat = el("div", { class: "chat", "aria-live": "polite" });
+  const out = el("div", { class: "cards" });
+  const roleBox = el("textarea", { "aria-label": "角色设定", style: "width:100%;min-height:110px;border:1px solid var(--rule);border-radius:10px;padding:12px;font-size:16px;background:var(--sheet)" });
+  roleBox.value = role;
+  const startBtn = el("button", { class: "btn primary", type: "button", text: "开始问我", onclick: () => start() });
+  const box = sayBox({ placeholder: "用说话回答，想到哪说到哪", sendText: "回答", onSend: (t) => answer(t) });
+  const skip = el("button", { class: "btn ghost", type: "button", text: "跳过这题", onclick: () => answer("（跳过）") });
+  const done = el("button", { class: "btn", type: "button", text: "现在就生成小传", onclick: () => finish() });
+  const answerPanel = el("div", { class: "panel", hidden: "" }, el("div", { class: "label", text: "你的回答" }), box.node, el("div", { class: "home-links", style: "margin:0" }, skip, done));
+  root.append(...sceneHead("SC.05 · 内 · 书房", "回答问题，得到小传", "AI 一次只问一个问题，你用说话回答。问完自动整理成人物小传，只用你说过的内容。"),
+    el("div", { class: "panel" }, el("div", { class: "label", text: "角色设定（可以改成你的新角色）" }), roleBox, startBtn),
+    chat, answerPanel, out);
+
+  const bubble = (who, text) => el("div", { class: "bubble " + who }, el("span", { class: "who", text: who === "ai" ? "表演老师" : "我" }), el("span", { text }));
+  async function start() {
+    role = roleBox.value.trim() || BIO_ROLE; qa = []; out.replaceChildren(); chat.replaceChildren();
+    startBtn.disabled = true; answerPanel.hidden = false; await nextQ();
+  }
+  async function nextQ() {
+    if (qa.length >= BIO_N) return finish();
+    box.busy = true;
+    const b = bubble("ai", "…"); chat.append(b); const t = b.lastChild;
+    ctl = new AbortController();
+    try {
+      const hist = qa.map((x, k) => `问${k + 1}：${x.q}\n答：${x.a}`).join("\n");
+      curQ = (await ask({ tier: "quick", signal: ctl.signal, onText: (x) => { t.textContent = x; },
+        system: `你是表演老师，在帮演员李一桐写人物小传。角色设定：${role}
+请问她下一个问题（第 ${qa.length + 1} 题，共 ${BIO_N} 题）。要求：只问一个问题，不超过 25 个字；从具体的生活细节问起，帮她想清楚人物；不要重复已经问过的方向；只输出问题本身。${RULES}`,
+        messages: [{ role: "user", content: hist ? `已经问过的：\n${hist}` : "开始吧。" }] })).trim();
+    } catch (e) {
+      if (e && e.code === "cancelled") return;
+      curQ = BIO_QS[qa.length % BIO_QS.length];
+    }
+    t.textContent = curQ; TTS.say(curQ); box.busy = false;
+    b.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  async function answer(a) {
+    TTS.unlock(); chat.append(bubble("me", a)); qa.push({ q: curQ, a }); box.clear(); await nextQ();
+  }
+  async function finish() {
+    if (ctl) ctl.abort();
+    answerPanel.hidden = true; out.replaceChildren(thinking("正在整理小传…"));
+    const real = qa.filter(x => x.a !== "（跳过）");
+    let data, demo = false;
+    try {
+      if (!real.length) throw { code: "empty" };
+      data = await ask({ json: true, tier: "default", system: `根据演员的回答写人物小传。角色设定：${role}
+只用她回答里的内容，可以把散的话连成通顺的句子，但不要添加新情节。没说到的部分写“（还没想好）”。
+只回复一个 JSON 对象：{"一句话":"…","成长经历":"…","她想要什么":"…","她怕什么":"…","和别人的关系":["…"],"一个细节":"…"}。${RULES}`,
+        messages: [{ role: "user", content: real.map(x => `问：${x.q}\n答：${x.a}`).join("\n\n") }] });
+    } catch (e) {
+      demo = true;
+      data = real.length ? Object.fromEntries(real.map(x => [x.q, x.a])) : { "提示": "先回答几个问题，再生成小传。" };
+    }
+    const c = renderObjCard("人物小传 · " + role.split(/[（(：:，,]/)[0], data, demo, "bio");
+    c.querySelector(".hint").textContent = demo ? "AI 没连上，这里先把你的回答原样列出来。" : "这是你说过的话整理出来的，可以随时改。";
+    out.replaceChildren(c); startBtn.disabled = false; startBtn.textContent = "重新来一遍";
+  }
+  return { abort: () => ctl && ctl.abort() };
+}
+
+/* ───────────── 收藏页 / 话术卡 ───────────── */
+function renderSaved(root) {
+  const list = store.get("saved", []);
+  root.append(...sceneHead("收藏", "我的收藏", list.length ? "你收藏过的结果，都在这台手机里。" : "还没有收藏。每个结果下面都有“收藏”。"));
+  const wrap = el("div", { class: "cards" });
+  list.forEach((it, idx) => {
+    const d = new Date(it.at);
+    const c = el("div", { class: "card" }, el("span", { class: "card-k", text: `${d.getMonth() + 1}月${d.getDate()}日` }), el("h3", { text: it.title }));
+    if (it.type === "web" && it.html) {
+      const f = el("iframe", { sandbox: "allow-scripts", title: it.title }); f.srcdoc = it.html;
+      c.append(el("div", { class: "phone" }, f));
+    } else if (it.data) {
+      for (const [k, v] of Object.entries(it.data)) {
+        c.append(el("div", { class: "card-k", text: k }));
+        c.append(Array.isArray(v) ? el("ul", {}, v.map(x => el("li", { text: String(x) }))) : el("p", { text: String(v) }));
+      }
+    }
+    c.append(el("div", { class: "card-actions" }, el("button", { class: "linkbtn", type: "button", text: "删除", onclick: () => {
+      const l = store.get("saved", []); l.splice(idx, 1); store.set("saved", l); go("saved"); } })));
+    wrap.append(c);
+  });
+  root.append(wrap);
+}
+const SCRIPT_LINES = [
+  ["这句台词什么意思？古人这时候会怎么做？", "拿到看不懂的台词"],
+  ["我要演一个___，你扮一个___和我聊十分钟。", "进组前，演新职业"],
+  ["我的角色是___，你问我 20 个问题，帮我写小传。", "写人物小传"],
+  ["今天是___的发布会，你扮记者问我五个问题。", "去发布会的车上"],
+  ["对戏、复盘时，按一下录音卡。", "拍戏期"],
+  ["帮我做一个___的小页面。", "想给粉丝做点什么"],
+];
+function renderScript(root) {
+  root.append(...sceneHead("随身", "随身话术卡", "离开这个网站也能用。打开豆包，照着说就行。"),
+    el("ol", { class: "script-list" }, SCRIPT_LINES.map(([s, w]) => el("li", {}, el("div", {}, el("q", { text: s }), el("span", { class: "when", text: w }))))),
+    el("p", { class: "hint", text: "核心只有一句：告诉 AI 我是谁、要干什么、要什么样。" }));
+}
+
+/* ───────────── 示例网页（AI 没连上时用） ───────────── */
+const FALLBACK_QUIZ = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>你像一桐的哪个角色</title><style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,"PingFang SC",sans-serif;background:#EEF2F8;color:#1B2233}
+.w{max-width:440px;margin:0 auto;padding:28px 20px 40px}h1{font-size:26px;margin:6px 0 4px}.s{color:#5A6478;margin:0 0 22px}
+.bar{height:6px;background:#D6DEEC;border-radius:9px;overflow:hidden;margin-bottom:22px}.bar i{display:block;height:100%;background:#2D4A8A;width:0;transition:width .3s}
+.q{font-size:21px;font-weight:600;margin:0 0 16px;line-height:1.45}.o{display:block;width:100%;text-align:left;font-size:17px;padding:15px 16px;margin:0 0 10px;border:1px solid #CBD4E4;border-radius:12px;background:#fff;color:inherit}
+.o:active{background:#E1E8F5}.r{text-align:center;padding-top:20px}.r .k{font-size:14px;color:#5A6478;letter-spacing:.1em}.r .n{font-size:44px;font-weight:800;margin:6px 0;color:#2D4A8A}
+.r .sh{color:#5A6478}.r p{font-size:17px;line-height:1.7}.again{margin-top:18px;font-size:17px;padding:14px 28px;border-radius:99px;border:0;background:#2D4A8A;color:#fff}
+</style></head><body><div class="w" id="w"></div><script>
+const R={黄蓉:["《射雕英雄传》","机灵、反应快，总能想到别人想不到的办法。"],陆文昔:["《鹤唳华亭》","外柔内刚，能忍，也能在关键时刻站出来。"],孟钰:["《狂飙》","直来直去，正义感强，一定要问出真相。"],宋小鱼:["《书卷一梦》","不服命运，越挫越有梗。"],余梦:["《美人余》","从头开始也不晚，一步步把人生拿回来。"]};
+const K=Object.keys(R);
+const Q=[["遇到麻烦，你第一反应是？",["先想个机灵办法","忍住，等最好的时机","直接问个清楚","先吐槽两句再说","先把证据理好"]],
+["朋友眼里的你？",["鬼点子最多","安静但有主意","正义感爆棚","段子手","越挫越勇"]],
+["周末最想做？",["研究一道新菜","读一本旧书","去现场看看","刷剧笑到打滚","上一门新课"]],
+["你最受不了？",["无聊","被误解","不公平","太正经","被人看轻"]],
+["选一句当座右铭",["办法总比困难多","沉住气，才能走得远","真相总要有人去问","命运不按剧本走，我也不","从头开始，也不算晚"]]];
+let i=0,sc=[0,0,0,0,0];const w=document.getElementById("w");
+function show(){if(i>=Q.length)return end();const[q,os]=Q[i];
+w.innerHTML='<h1>你像一桐的哪个角色？</h1><p class="s">5 道题，凭直觉选</p><div class="bar"><i style="width:'+(i/Q.length*100)+'%"></i></div><p class="q">'+(i+1)+'. '+q+'</p>'+os.map((o,k)=>'<button class="o" data-k="'+k+'">'+o+'</button>').join("");
+w.querySelectorAll(".o").forEach(b=>b.onclick=()=>{sc[+b.dataset.k]++;i++;show()})}
+function end(){const m=Math.max(...sc);const n=K[sc.indexOf(m)];const[s,t]=R[n];
+w.innerHTML='<div class="r"><div class="k">你最像</div><div class="n">'+n+'</div><div class="sh">'+s+'</div><p>'+t+'</p><button class="again">再测一次</button></div>';
+w.querySelector(".again").onclick=()=>{i=0;sc=[0,0,0,0,0];show()}}
+show();
+<\/script></body></html>`;
+
+/* ───────────── 启动 ───────────── */
+renderHome();
+initAI();
+const hash = (location.hash || "").slice(1);
+if (SCENES.some(s => s.id === hash)) go("scene", hash);
+})();
+</script>
+</body></html>
