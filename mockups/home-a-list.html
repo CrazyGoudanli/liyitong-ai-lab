@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>首页方案 A · 清单</title>
+<style>
+:root{--paper:#F1F2F4;--sheet:#FFFFFF;--ink:#15171C;--ink-2:#5B606C;--ink-3:#8C919C;--rule:#D8DBE1;--accent:#2D4A8A;--accent-soft:#E4E9F4;--radius:12px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper)}
+body{color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;padding:0 16px 40px;-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding-top:28px}
+h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:28px;line-height:1.3;margin:0 0 6px;font-weight:700}
+.lead{margin:0 0 24px;color:var(--ink-2);font-size:15px}
+.list{list-style:none;margin:0;padding:0;background:var(--sheet);border:1px solid var(--rule);border-radius:var(--radius);overflow:hidden}
+.item{display:block;text-decoration:none;color:inherit;padding:18px 18px 18px;border-bottom:1px solid var(--rule)}
+.item:last-child{border-bottom:0}
+.item h2{margin:0 0 4px;font-size:20px;font-weight:700;line-height:1.35}
+.item p{margin:0;font-size:15px;color:var(--ink-2);line-height:1.55}
+.item .go{float:right;color:var(--accent);font-size:20px;margin-top:-2px}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+.links a{display:flex;align-items:center;justify-content:center;min-height:48px;border:1px solid var(--rule);background:var(--sheet);border-radius:var(--radius);color:var(--ink);text-decoration:none;font-size:16px;font-weight:600}
+.foot{margin-top:24px;font-size:13px;color:var(--ink-3)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3F9A62;margin-right:6px;vertical-align:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>选一个，马上试</h1>
+  <p class="lead">每一项点进去都是一步一步的小操作，不需要懂电脑。</p>
+
+  <ul class="list">
+    <li><a class="item" href="#">
+      <span class="go">›</span>
+      <h2>做一个粉丝测试页</h2>
+      <p>说一句想要什么，几十秒生成一个能点的小测试。不满意可以接着说“换个颜色”。</p>
+    </a></li>
+    <li><a class="item" href="#">
+      <span class="go">›</span>
+      <h2>职业功课卡</h2>
+      <p>选律师、记者或老板，和 AI 聊十分钟。最后拿到一张卡：常用说法、习惯动作、一天怎么过。</p>
+    </a></li>
+    <li><a class="item" href="#">
+      <span class="go">›</span>
+      <h2>采访问答练习</h2>
+      <p>模拟记者会问的 5 个问题。每题给出 2–3 个要点，和一句能直接说的话。</p>
+    </a></li>
+    <li><a class="item" href="#">
+      <span class="go">›</span>
+      <h2>古装台词速懂</h2>
+      <p>拍一句台词，或从台词里点一句。看白话意思、典故，以及人物这时候会怎么做。</p>
+    </a></li>
+    <li><a class="item" href="#">
+      <span class="go">›</span>
+      <h2>人物小传生成</h2>
+      <p>回答 8 个问题，整理成一份人物小传。只用你说过的话，不编造。</p>
+    </a></li>
+  </ul>
+
+  <div class="links">
+    <a href="#">我的收藏</a>
+    <a href="#">随身话术卡</a>
+  </div>
+  <div class="foot"><span class="dot"></span>AI 已连接</div>
+</div>
+</body>
+</html>
