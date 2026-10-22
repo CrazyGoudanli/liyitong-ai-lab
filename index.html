@@ -270,6 +270,8 @@ async function initAI() {
     const r = await fetch("api/health", { cache: "no-store" });
     if (r.ok) { const j = await r.json(); if (j && j.ai) { AI.mode = "server"; AI.label = j.label || "豆包"; return showMode(); } }
   } catch {}
+  const ark = store.get("ark", null);
+  if (ark && ark.key) { AI.mode = "direct"; AI.ark = ark; AI.label = "豆包（火山方舟）"; return showMode(); }
   try {
     if (window.claude && window.claude.use) {
       const s = await window.claude.use("sample");
@@ -279,7 +281,7 @@ async function initAI() {
   AI.mode = "demo"; showMode();
 }
 function showMode() {
-  const on = AI.mode === "server" || AI.mode === "claude";
+  const on = AI.mode === "server" || AI.mode === "claude" || AI.mode === "direct";
   $("#dot").classList.toggle("on", on);
   $("#mode").textContent = on ? `AI 已连接：${AI.label}` : AI.mode === "demo" ? "演示模式：AI 没连上，会显示示例结果" : "正在连接 AI…";
 }
@@ -316,7 +318,30 @@ async function ask({ system, messages = [], json = false, images = [], onText, t
       body: JSON.stringify(body),
     });
     if (r.status === 401) { askCode(); throw { code: "need_code" }; }
-    if (!r.ok || !r.body) throw { code: "upstream_error" };
+    return finishSSE(r, json, onText);
+  }
+  if (AI.mode === "direct") {
+    const msgs = [{ role: "system", content: system }, ...messages0(messages)];
+    if (images.length) {
+      const urls = await Promise.all(images.map(blobToDataURL));
+      const last = [...msgs].reverse().find(m => m.role === "user");
+      if (last) last.content = [{ type: "text", text: last.content }, ...urls.map(url => ({ type: "image_url", image_url: { url } }))];
+    }
+    const r = await fetch((AI.ark.base || ARK_BASE) + "/chat/completions", {
+      method: "POST", signal,
+      headers: { "content-type": "application/json", authorization: "Bearer " + AI.ark.key },
+      body: JSON.stringify({ model: AI.ark.model || ARK_MODEL, messages: msgs, stream: true, max_tokens: maxTokens }),
+    });
+    return finishSSE(r, json, onText);
+  }
+  throw { code: "demo" };
+}
+const ARK_BASE = "https://ark.cn-beijing.volces.com/api/v3";
+const ARK_MODEL = "doubao-seed-2-1-pro-260915";
+const messages0 = (m) => m.map(x => ({ role: x.role, content: x.content }));
+async function finishSSE(r, json, onText) {
+  {
+    if (!r.ok || !r.body) throw { code: "upstream_error", status: r.status };
     const reader = r.body.getReader(), dec = new TextDecoder();
     let buf = "", text = "";
     for (;;) {
@@ -333,7 +358,6 @@ async function ask({ system, messages = [], json = false, images = [], onText, t
     if (!text.trim()) throw { code: "empty_completion" };
     return json ? parseJSON(text) : text;
   }
-  throw { code: "demo" };
 }
 const isHardOff = (e) => ["demo", "not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e && e.code);
 
@@ -447,6 +471,7 @@ function go(view, sceneId) {
       current = s.render(body) || null;
     } else if (view === "saved") { $("#scene-no").textContent = "收藏"; renderSaved(body); }
     else if (view === "script") { $("#scene-no").textContent = "话术卡"; renderScript(body); }
+    else if (view === "setup") { $("#scene-no").textContent = "设置"; renderSetup(body); }
   }
   window.scrollTo(0, 0);
 }
@@ -849,6 +874,39 @@ function renderScript(root) {
     el("p", { class: "hint", text: "核心只有一句：告诉 AI 我是谁、要干什么、要什么样。" }));
 }
 
+/* ───────────── 设置：在这台手机上填火山方舟密钥（打开 网址#setup） ───────────── */
+function renderSetup(root) {
+  const cur = store.get("ark", {}) || {};
+  const field = (id, label, value, type = "text") => {
+    const i = el("input", { id, type, value: value || "", autocomplete: "off", spellcheck: "false",
+      style: "width:100%;min-height:48px;border:1px solid var(--rule);border-radius:10px;padding:0 12px;font-size:16px;background:var(--sheet)" });
+    return [el("label", { class: "label", for: id, text: label }), i];
+  };
+  const out = el("div", { class: "cards" });
+  root.append(...sceneHead("设置", "连接火山方舟", "密钥只存在这台手机的浏览器里，不写进网站代码。换手机或清了浏览器数据，要重新填。"),
+    el("div", { class: "panel" },
+      ...field("ark-key", "API Key", cur.key, "password"),
+      ...field("ark-model", "模型 ID 或接入点 ID", cur.model || ARK_MODEL),
+      ...field("ark-base", "接口地址（一般不用改）", cur.base || ARK_BASE),
+      el("div", { class: "home-links", style: "margin:0" },
+        el("button", { class: "btn primary", type: "button", text: "保存并测试", onclick: test }),
+        el("button", { class: "btn", type: "button", text: "清除密钥", onclick: () => { store.set("ark", null); AI.mode = "demo"; AI.ark = null; showMode(); out.replaceChildren(el("div", { class: "card" }, el("p", { text: "已清除。网站回到演示模式。" }))); } }))),
+    out);
+  async function test() {
+    const ark = { key: $("#ark-key").value.trim(), model: $("#ark-model").value.trim() || ARK_MODEL, base: ($("#ark-base").value.trim() || ARK_BASE).replace(/\/$/, "") };
+    if (!ark.key) return;
+    store.set("ark", ark); AI.mode = "direct"; AI.ark = ark; AI.label = "豆包（火山方舟）"; showMode();
+    out.replaceChildren(thinking("正在测试连接…"));
+    try {
+      const t = await ask({ system: "你是测试助手。", messages: [{ role: "user", content: "请只回复：连接成功" }], maxTokens: 50 });
+      out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接成功" }), el("p", { text: "AI 回复：" + t.trim() }), el("button", { class: "btn primary", type: "button", text: "回到通告单", "data-go": "home" })));
+    } catch (e) {
+      const why = e && e.status === 401 ? "密钥不对或已失效。" : e && e.status === 404 ? "模型 ID 不对，或这个账号没开通这个模型。" : e && e.status ? `火山方舟返回了错误（${e.status}）。` : "网页连不上火山方舟。可能是火山方舟不允许网页直接调用（浏览器跨域限制），这种情况要用服务器版。";
+      out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接失败" }), el("p", { text: why })));
+    }
+  }
+}
+
 /* ───────────── 示例网页（AI 没连上时用） ───────────── */
 const FALLBACK_QUIZ = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>你像一桐的哪个角色</title><style>
@@ -881,6 +939,7 @@ renderHome();
 initAI();
 const hash = (location.hash || "").slice(1);
 if (SCENES.some(s => s.id === hash)) go("scene", hash);
+else if (hash === "setup") go("setup");
 })();
 </script>
 </body></html>
