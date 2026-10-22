@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&display=swap">
+<title>首页方案 F · 书架</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"}}</script>
+<style>
+/* 方向：书房里的五本书。封面朝前，中间一本大，两边斜着露出一半，左右滑动换书。
+   每本书的封面是一幅画，画的是这个功能的东西：页面、印章、声波、折扇、人像的等高线。
+   书架下面永远有列表；没有 WebGL 时，只剩列表。 */
+:root{--bg:#171B27;--sheet:#212838;--ink:#F1ECE3;--ink-2:#A9B0C0;--line:#2D364A;--lamp:#E6B96C}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:-apple-system,"PingFang SC","Noto Sans SC",sans-serif;padding:0 16px 56px;min-height:100vh;-webkit-text-size-adjust:100%}
+.wrap{max-width:540px;margin:0 auto;padding-top:26px}
+h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:26px;line-height:1.3;margin:0 0 14px;font-weight:700}
+#shelf.nogl{display:none}
+#stage{position:relative;height:372px;margin:0 -16px;background:radial-gradient(80% 60% at 50% 38%,#2B3248 0%,#1A1F2E 62%,#14171F 100%);-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 16%,#000 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 16%,#000 100%)}
+#stage canvas{display:block;width:100%;height:100%;touch-action:pan-y;cursor:grab}
+.pick{padding:6px 0 4px;text-align:center}
+.pick h2{margin:0 0 4px;font-family:"Noto Serif SC","Songti SC",serif;font-size:26px;line-height:1.3;font-weight:700}
+.pick p{margin:0 auto 16px;max-width:22em;color:var(--ink-2);font-size:15px;line-height:1.6;min-height:3.2em}
+.pk-row{display:flex;gap:10px;align-items:center}
+.round{flex:none;width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:22px;cursor:pointer}
+.round:disabled{opacity:.35;cursor:default}
+.open{flex:1;min-height:52px;border:0;border-radius:26px;background:var(--lamp);color:#171B27;font-size:17px;font-weight:700;cursor:pointer}
+.dots{display:flex;justify-content:center;gap:8px;margin-top:14px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .3s,transform .3s}
+.dots i.on{background:var(--lamp);transform:scale(1.25)}
+.list{list-style:none;margin:30px 0 0;padding:0}
+.list-h{margin:34px 0 0;font-size:13px;color:var(--ink-2)}
+.list li{border-top:1px solid var(--line)}
+.list li:last-child{border-bottom:1px solid var(--line)}
+.row{display:block;width:100%;text-align:left;background:none;border:0;color:inherit;padding:18px 0 16px;cursor:pointer;font:inherit}
+.row h3{margin:0 0 4px;font-family:"Noto Serif SC","Songti SC",serif;font-size:20px;font-weight:700;line-height:1.35}
+.row p{margin:0 0 10px;color:var(--ink-2);font-size:14.5px;line-height:1.6}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink-2)}
+.steps li{border:0}
+.steps li::before{content:attr(data-n) " ";color:var(--lamp);font-weight:700}
+.row:hover h3,.row.on h3{color:var(--lamp)}
+.row:focus-visible,.round:focus-visible,.open:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+.links a{display:flex;align-items:center;justify-content:center;min-height:48px;border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:15px;font-weight:600;border-radius:8px}
+.foot{margin-top:24px;font-size:13px;color:var(--ink-2)}
+.foot i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#7FD3A0;margin-right:8px;vertical-align:1px}
+/* 详情层 */
+#sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:540px;max-height:80vh;overflow:auto;background:var(--sheet);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;padding:24px 20px calc(22px + env(safe-area-inset-bottom,0px));transform:translateY(105%);visibility:hidden;transition:transform 420ms cubic-bezier(.2,.72,.24,1),visibility 0s linear 420ms;z-index:10}
+#sheet.show{transform:translateY(0);visibility:visible;transition:transform 420ms cubic-bezier(.2,.72,.24,1),visibility 0s}
+#sheet h2{margin:0 0 6px;font-family:"Noto Serif SC","Songti SC",serif;font-size:24px;line-height:1.3;padding-right:56px}
+#sheet .when{margin:0 0 16px;font-size:14px;color:var(--ink-2)}
+#sheet ol{margin:0 0 22px;padding:0;list-style:none;display:grid;gap:12px}
+#sheet ol li{display:grid;grid-template-columns:26px 1fr;gap:8px;font-size:16px;line-height:1.5}
+#sheet ol b{color:var(--lamp);font-family:"Noto Serif SC","Songti SC",serif;font-size:18px}
+.go{display:flex;align-items:center;justify-content:center;min-height:52px;background:var(--lamp);color:#171B27;text-decoration:none;font-weight:700;border-radius:26px;font-size:17px}
+.close{position:absolute;top:14px;right:14px;background:none;border:0;color:var(--ink-2);font-size:15px;padding:8px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){#sheet{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>今天想用 AI 做点什么？</h1>
+
+  <section id="shelf" aria-label="功能书架">
+    <div id="stage"></div>
+    <div class="pick">
+      <h2 id="pk-title"></h2>
+      <p id="pk-text"></p>
+      <div class="pk-row">
+        <button class="round" id="prev" type="button" aria-label="上一个">‹</button>
+        <button class="open" id="pk-open" type="button">打开</button>
+        <button class="round" id="next" type="button" aria-label="下一个">›</button>
+      </div>
+      <div class="dots" id="dots" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <p class="list-h">全部功能</p>
+  <ol class="list" id="list" style="margin-top:8px"></ol>
+
+  <div class="links"><a href="#">我的收藏</a><a href="#">随身话术卡</a></div>
+  <div class="foot"><i></i>AI 已连接</div>
+</div>
+
+<section id="sheet" role="dialog" aria-modal="false" aria-labelledby="sh-title" aria-hidden="true">
+  <button class="close" id="close" type="button">关闭</button>
+  <h2 id="sh-title"></h2>
+  <p class="when" id="sh-when"></p>
+  <ol id="sh-steps"></ol>
+  <a class="go" id="sh-go" href="#">开始</a>
+</section>
+
+<script>
+/* 数据与界面逻辑：不依赖 3D。3D 书架只是另一种选择的方式。 */
+const ITEMS = [
+  { name: "做一个粉丝测试页", cap: "想和粉丝互动", art: "page", bg: "#E8825B", fg: "#FFF4E8",
+    text: "说一句想要的样子，几十秒做出一个能点的小测试。", when: "想和粉丝互动的时候",
+    steps: ["说一句想要什么", "等几十秒", "点开玩，或接着说“换个颜色”"] },
+  { name: "职业功课卡", cap: "进组之前", art: "seal", bg: "#A8C5E2", fg: "#1D2F4A",
+    text: "选律师、记者或老板，聊十分钟，收下一张卡。", when: "接新角色、进组之前",
+    steps: ["选一个职业", "聊十分钟", "拿到常用说法和习惯动作"] },
+  { name: "采访问答练习", cap: "发布会前", art: "wave", bg: "#1F3E9A", fg: "#F6F1E6",
+    text: "模拟记者的 5 个问题，每题给要点和一句能直接说的话。", when: "发布会、采访前",
+    steps: ["选发布会或日常专访", "回答一个问题", "看要点，再答一遍"] },
+  { name: "古装台词速懂", cap: "拍戏现场", art: "fan", bg: "#D9B25C", fg: "#2B1D14",
+    text: "拍一句台词，看白话意思、典故，和人物这时候的动作。", when: "台词看不懂的时候",
+    steps: ["拍一句或点一句", "看白话和典故", "看人物的动作"] },
+  { name: "人物小传生成", cap: "理清角色", art: "contour", bg: "#5A4A7B", fg: "#FBEFF2",
+    text: "回答 8 个问题，整理成只用你说过的话写的小传。", when: "想把角色理清楚",
+    steps: ["回答 8 个问题", "点生成", "逐条改到满意"] },
+];
+
+const $ = (s) => document.querySelector(s);
+const sheet = $("#sheet");
+let cur = -1;
+
+ITEMS.forEach((it, i) => {
+  const li = document.createElement("li");
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "row"; b.dataset.i = i;
+  b.innerHTML = `<h3></h3><p></p><ol class="steps"></ol>`;
+  b.querySelector("h3").textContent = it.name;
+  b.querySelector("p").textContent = it.text;
+  const ol = b.querySelector(".steps");
+  it.steps.forEach((s, k) => { const x = document.createElement("li"); x.dataset.n = k + 1; x.textContent = s; ol.appendChild(x); });
+  b.addEventListener("click", () => openItem(i));
+  li.appendChild(b); $("#list").appendChild(li);
+  const d = document.createElement("i"); $("#dots").appendChild(d);
+});
+
+function showPick(i) {
+  const it = ITEMS[i];
+  $("#pk-title").textContent = it.name;
+  $("#pk-text").textContent = it.text;
+  document.querySelectorAll("#dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+  $("#prev").disabled = i === 0;
+  $("#next").disabled = i === ITEMS.length - 1;
+  window.__pick = i;
+}
+function openItem(i) {
+  cur = i;
+  const it = ITEMS[i];
+  $("#sh-title").textContent = it.name;
+  $("#sh-when").textContent = "什么时候用：" + it.when;
+  const ol = $("#sh-steps"); ol.replaceChildren();
+  it.steps.forEach((s, k) => {
+    const li = document.createElement("li");
+    const b = document.createElement("b"); b.textContent = k + 1;
+    const sp = document.createElement("span"); sp.textContent = s;
+    li.append(b, sp); ol.appendChild(li);
+  });
+  sheet.classList.add("show"); sheet.setAttribute("aria-hidden", "false");
+  document.querySelectorAll(".row").forEach((r) => r.classList.toggle("on", +r.dataset.i === i));
+  if (window.shelfGo) window.shelfGo(i); else showPick(i);
+  $("#sh-go").focus({ preventScroll: true });
+}
+function closeItem() {
+  cur = -1;
+  sheet.classList.remove("show"); sheet.setAttribute("aria-hidden", "true");
+  document.querySelectorAll(".row.on").forEach((r) => r.classList.remove("on"));
+}
+$("#close").addEventListener("click", closeItem);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && cur >= 0) closeItem(); });
+$("#pk-open").addEventListener("click", () => openItem(window.__pick || 0));
+$("#prev").addEventListener("click", () => window.shelfGo && window.shelfGo((window.__pick || 0) - 1));
+$("#next").addEventListener("click", () => window.shelfGo && window.shelfGo((window.__pick || 0) + 1));
+window.ITEMS = ITEMS; window.openItem = openItem; window.showPick = showPick;
+showPick(0);
+</script>
+
+<script type="module">
+const shelf = document.getElementById("shelf");
+const stage = document.getElementById("stage");
+const noGL = () => shelf.classList.add("nogl");
+const hasWebGL = () => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; } };
+
+(async function init() {
+  if (!hasWebGL()) return noGL();
+  let THREE, RoundedBoxGeometry, RoomEnvironment;
+  try {
+    THREE = await import("three");
+    ({ RoundedBoxGeometry } = await import("three/addons/geometries/RoundedBoxGeometry.js"));
+    ({ RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js"));
+  } catch (e) { return noGL(); }
+  try {
+    // 字体最多等 1.5 秒，等不到就用系统宋体
+    await Promise.race([document.fonts.load("700 78px 'Noto Serif SC'"), new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
+    build(THREE, RoundedBoxGeometry, RoomEnvironment);
+  } catch (e) { console.warn("书架加载失败，只显示列表", e); noGL(); }
+})();
+
+/* ───────── 封面：每本书一幅画 ───────── */
+const SERIF = "'Noto Serif SC','Songti SC','STSong','Source Han Serif SC',serif";
+const SANS = "-apple-system,'PingFang SC','Noto Sans SC',sans-serif";
+const CW = 768, CH = 1024;
+
+function rr(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+const artPage = (g, it) => {           // 一层层往里收的窗口：页面是一层层搭出来的
+  const fills = ["#F9C0AE", "#F4A292", "#EE8579", "#F6B4A2", "#FBD7C0", "#FFF0E2"];
+  fills.forEach((c, k) => {
+    const w = 440 - k * 62, h = 560 - k * 78, x = 384 - w / 2, y = 130 + k * 22;
+    g.fillStyle = c; rr(g, x, y, w, h, 34 - k * 3); g.fill();
+    g.strokeStyle = "rgba(120,40,30,.18)"; g.lineWidth = 3; g.stroke();
+  });
+  g.fillStyle = "#C4503A"; rr(g, 330, 400, 108, 150, 18); g.fill();   // 屏幕里的那扇小门
+  g.strokeStyle = "#FFF3E6"; g.lineWidth = 8; g.lineCap = "round"; g.lineJoin = "round";
+  g.beginPath(); g.moveTo(352, 478); g.lineTo(378, 504); g.lineTo(418, 450); g.stroke(); // 对勾
+};
+const artSeal = (g, it) => {           // 印章 + 刻度：功课卡的盖章
+  const cx = 384, cy = 410, ink = "#244265";
+  g.strokeStyle = ink; g.lineWidth = 4;
+  g.beginPath(); g.arc(cx, cy, 262, 0, 7); g.stroke();
+  g.lineWidth = 3;
+  for (let k = 0; k < 90; k++) {
+    const a = (k / 90) * Math.PI * 2, l = k % 5 === 0 ? 26 : 13;
+    g.beginPath(); g.moveTo(cx + Math.cos(a) * 262, cy + Math.sin(a) * 262); g.lineTo(cx + Math.cos(a) * (262 - l), cy + Math.sin(a) * (262 - l)); g.stroke();
+  }
+  g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, 190, 0, 7); g.stroke();
+  g.fillStyle = "rgba(244,248,251,.75)"; g.beginPath(); g.arc(cx, cy, 160, 0, 7); g.fill();
+  g.save(); g.translate(cx, cy); g.rotate(-0.5);
+  g.fillStyle = ink; g.beginPath(); g.moveTo(0, -150); g.lineTo(26, 0); g.lineTo(0, 150); g.lineTo(-26, 0); g.closePath(); g.fill();
+  g.fillStyle = "#E7A15F"; g.beginPath(); g.moveTo(0, -150); g.lineTo(26, 0); g.lineTo(-26, 0); g.closePath(); g.fill();
+  g.restore();
+  g.fillStyle = "#F4F8FB"; g.beginPath(); g.arc(cx, cy, 14, 0, 7); g.fill();
+};
+const artWave = (g, it) => {           // 声波：一块奶白的板，里面是一排高低起伏的竖条
+  g.fillStyle = "#F3EDE1"; rr(g, 114, 190, 540, 470, 44); g.fill();
+  const n = 19, bw = 17, gap = 12, total = n * bw + (n - 1) * gap, x0 = 384 - total / 2;
+  for (let k = 0; k < n; k++) {
+    const t = (k - (n - 1) / 2) / ((n - 1) / 2);
+    const h = 70 + 250 * Math.pow(Math.cos(t * 1.25), 2) * (0.55 + 0.45 * Math.abs(Math.sin(k * 1.7)));
+    g.fillStyle = k === 12 ? "#E0803F" : "#1F3E9A";
+    rr(g, x0 + k * (bw + gap), 425 - h / 2, bw, h, 8); g.fill();
+  }
+  g.fillStyle = "#1F3E9A"; g.globalAlpha = .25; g.fillRect(150, 620, 468, 4); g.globalAlpha = 1;
+};
+const artFan = (g, it) => {            // 折扇：古装台词，一把展开的扇子
+  const px = 384, py = 640, R = 360, a0 = Math.PI * 1.17, a1 = Math.PI * 1.83;
+  g.fillStyle = "#F5E8C8"; g.beginPath(); g.moveTo(px, py); g.arc(px, py, R, a0, a1); g.closePath(); g.fill();
+  g.fillStyle = "#D9B25C"; g.beginPath(); g.moveTo(px, py); g.arc(px, py, 110, a0, a1); g.closePath(); g.fill();
+  g.strokeStyle = "#3A2619"; g.lineWidth = 3;
+  for (let k = 0; k <= 14; k++) { const a = a0 + (a1 - a0) * (k / 14); g.beginPath(); g.moveTo(px + Math.cos(a) * 110, py + Math.sin(a) * 110); g.lineTo(px + Math.cos(a) * R, py + Math.sin(a) * R); g.stroke(); }
+  g.lineWidth = 9; g.beginPath(); g.arc(px, py, R, a0, a1); g.stroke();
+  g.lineWidth = 4; g.beginPath(); g.arc(px, py, 110, a0, a1); g.stroke();
+  g.fillStyle = "#B8432E";  // 扇面上的几点红梅
+  [[330, 360, 15], [392, 318, 11], [452, 372, 13], [300, 420, 9], [430, 430, 8]].forEach(([x, y, r]) => { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
+  g.strokeStyle = "#3A2619"; g.lineWidth = 5; g.lineCap = "round";
+  g.beginPath(); g.moveTo(250, 520); g.quadraticCurveTo(330, 440, 392, 318); g.quadraticCurveTo(420, 350, 452, 372); g.stroke();
+  g.fillStyle = "#3A2619"; g.beginPath(); g.arc(px, py, 20, 0, 7); g.fill();
+};
+const artContour = (g, it) => {        // 等高线：一个人，从外到内一圈圈长出来
+  const cx = 384, cy = 410;
+  for (let k = 15; k >= 0; k--) {
+    g.beginPath();
+    for (let s = 0; s <= 120; s++) {
+      const a = (s / 120) * Math.PI * 2;
+      const r = (26 + k * 17) * (1 + 0.11 * Math.sin(3 * a + k * 0.35) + 0.07 * Math.sin(5 * a - k * 0.28) + 0.04 * Math.sin(2 * a + 1));
+      const x = cx + Math.cos(a) * r * 1.05, y = cy + Math.sin(a) * r * 1.25;
+      s ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    if (k === 0) { g.fillStyle = "#F5B5A3"; g.fill(); }
+    g.strokeStyle = k % 3 === 0 ? "rgba(251,239,242,.75)" : "rgba(251,239,242,.32)";
+    g.lineWidth = k % 3 === 0 ? 4 : 2.5; g.stroke();
+  }
+};
+const ART = { page: artPage, seal: artSeal, wave: artWave, fan: artFan, contour: artContour };
+
+function drawCover(it) {
+  const c = document.createElement("canvas"); c.width = CW; c.height = CH;
+  const g = c.getContext("2d");
+  // 底色：左上略亮，右下略沉
+  const gr = g.createLinearGradient(0, 0, CW, CH);
+  gr.addColorStop(0, "rgba(255,255,255,.14)"); gr.addColorStop(.5, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(0,0,0,.18)");
+  g.fillStyle = it.bg; g.fillRect(0, 0, CW, CH);
+  g.fillStyle = gr; g.fillRect(0, 0, CW, CH);
+  // 布面颗粒
+  for (let k = 0; k < 9000; k++) {
+    g.fillStyle = Math.random() < .5 ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.05)";
+    g.fillRect(Math.random() * CW, Math.random() * CH, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  ART[it.art](g, it);
+  // 小标签（什么时候用）与书名
+  g.fillStyle = it.fg; g.globalAlpha = .85; g.textBaseline = "alphabetic"; g.textAlign = "left";
+  g.font = `600 40px ${SANS}`; g.fillText(it.cap, 62, 92); g.globalAlpha = 1;
+  let fs = 84; g.font = `700 ${fs}px ${SERIF}`;
+  while (g.measureText(it.name).width > CW - 124 && fs > 40) { fs -= 2; g.font = `700 ${fs}px ${SERIF}`; }
+  g.fillText(it.name, 62, 930);
+  g.globalAlpha = .55; g.fillRect(62, 962, 90, 3); g.globalAlpha = 1;
+  // 书脊的折痕
+  const hg = g.createLinearGradient(40, 0, 96, 0);
+  hg.addColorStop(0, "rgba(0,0,0,0)"); hg.addColorStop(.45, "rgba(0,0,0,.22)"); hg.addColorStop(.62, "rgba(255,255,255,.12)"); hg.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = hg; g.fillRect(40, 0, 56, CH);
+  return c;
+}
+
+/* ───────── 三维场景 ───────── */
+function build(THREE, RoundedBoxGeometry, RoomEnvironment) {
+  const items = window.ITEMS, N = items.length;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const W = stage.clientWidth, H = stage.clientHeight;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const pm = new THREE.PMREMGenerator(renderer);
+  scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.55;
+
+  const camera = new THREE.PerspectiveCamera(28, W / H, 0.1, 60);
+  camera.position.set(0, 0.5, 8.3);
+  camera.lookAt(0, 0.0, 0);
+
+  const key = new THREE.DirectionalLight(0xfff1dc, 2.3);
+  key.position.set(-3.2, 5.2, 6.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -7; key.shadow.camera.right = 7; key.shadow.camera.top = 5; key.shadow.camera.bottom = -4;
+  key.shadow.camera.near = 1; key.shadow.camera.far = 20;
+  key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; key.shadow.radius = 5;
+  scene.add(key);
+  scene.add(new THREE.AmbientLight(0x8fa0c8, 0.25));
+
+  // 背墙：接住书的影子
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(40, 14), new THREE.MeshStandardMaterial({ color: 0x232A3D, roughness: 1 }));
+  wall.position.set(0, 1, -1.1); wall.receiveShadow = true; scene.add(wall);
+
+  // 书架：深色木板，细纹
+  const wc = document.createElement("canvas"); wc.width = 1024; wc.height = 128;
+  const wg = wc.getContext("2d");
+  wg.fillStyle = "#3A2A23"; wg.fillRect(0, 0, 1024, 128);
+  for (let k = 0; k < 90; k++) {
+    wg.strokeStyle = `rgba(${Math.random() < .5 ? "20,12,8" : "110,80,60"},${.05 + Math.random() * .1})`;
+    wg.lineWidth = .6 + Math.random() * 1.6;
+    const y = Math.random() * 128; wg.beginPath(); wg.moveTo(0, y); wg.bezierCurveTo(300, y + (Math.random() - .5) * 10, 700, y + (Math.random() - .5) * 10, 1024, y + (Math.random() - .5) * 8); wg.stroke();
+  }
+  const woodTex = new THREE.CanvasTexture(wc); woodTex.colorSpace = THREE.SRGBColorSpace; woodTex.wrapS = THREE.RepeatWrapping; woodTex.repeat.set(2, 1);
+  const board = new THREE.Mesh(new RoundedBoxGeometry(18, 0.34, 2.0, 3, 0.03), new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.55, metalness: 0.02 }));
+  board.position.set(0, -1.05 - 0.17, 0.3); board.receiveShadow = true; scene.add(board);
+  // 木板下面是书柜的前挡板，遮住后面的墙
+  const apron = new THREE.Mesh(new THREE.BoxGeometry(40, 8, 0.4), new THREE.MeshStandardMaterial({ color: 0x2A1E19, roughness: 0.8 }));
+  apron.position.set(0, -1.05 - 0.34 - 4, 1.2); apron.receiveShadow = true; scene.add(apron);
+
+  // 书
+  const BW = 1.5, BH = 2.1, T = 0.035, PD = 0.2;
+  const pageTex = (() => {
+    const c = document.createElement("canvas"); c.width = 64; c.height = 256; const g = c.getContext("2d");
+    g.fillStyle = "#EFE8D9"; g.fillRect(0, 0, 64, 256);
+    for (let y = 0; y < 256; y += 2) { g.fillStyle = `rgba(120,100,70,${.06 + Math.random() * .08})`; g.fillRect(0, y, 64, 1); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const books = items.map((it, i) => {
+    const grp = new THREE.Group();
+    const tex = new THREE.CanvasTexture(drawCover(it));
+    tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    const edge = new THREE.MeshStandardMaterial({ color: new THREE.Color(it.bg).multiplyScalar(0.72), roughness: 0.7 });
+    const face = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.62, metalness: 0.0 });
+    const front = new THREE.Mesh(new RoundedBoxGeometry(BW, BH, T, 3, 0.014), [edge, edge, edge, edge, face, edge]);
+    front.position.z = PD / 2 + T / 2;
+    const back = new THREE.Mesh(new RoundedBoxGeometry(BW, BH, T, 3, 0.014), edge);
+    back.position.z = -(PD / 2 + T / 2);
+    const spine = new THREE.Mesh(new RoundedBoxGeometry(0.06, BH, PD + 2 * T, 3, 0.016), edge);
+    spine.position.x = -BW / 2 + 0.03;
+    const pg = new THREE.MeshStandardMaterial({ map: pageTex, roughness: 0.9 });
+    const pages = new THREE.Mesh(new THREE.BoxGeometry(BW - 0.1, BH - 0.09, PD), pg);
+    pages.position.x = 0.0;
+    [front, back, spine, pages].forEach((m) => { m.castShadow = true; m.receiveShadow = true; grp.add(m); });
+    grp.userData.index = i;
+    grp.position.y = 0;
+    scene.add(grp);
+    return grp;
+  });
+
+  // 轮播：scroll 是一个连续的位置，书按离中心的距离摆放
+  let scroll = reduce ? 0 : -1.6, target = 0, dragging = false, sx = 0, s0 = 0, t0 = 0, moved = 0, vel = 0, lx = 0, lt = 0;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const place = () => {
+    books.forEach((b, i) => {
+      const d = i - scroll, a = Math.abs(d), s = Math.sign(d);
+      const near = Math.min(a, 1);
+      b.position.x = s * (a <= 1 ? a * 1.78 : 1.78 + (a - 1) * 1.45);
+      b.position.z = 0.55 - near * 0.55 - Math.max(0, a - 1) * 0.25;
+      b.rotation.y = clamp(-d * 0.42, -0.62, 0.62);
+      const sc = 1 - near * 0.17; b.scale.setScalar(sc);
+      b.position.y = -1.05 + (BH * sc) / 2 + 0.002 - 0.0 - (BH / 2) * 0;   // 脚踩在木板上
+      b.position.y = -1.05 + (BH / 2) * sc;
+    });
+  };
+  const unit = () => stage.clientWidth * 0.42;
+  const goTo = (i) => { target = clamp(Math.round(i), 0, N - 1); window.showPick(target); };
+  window.shelfGo = goTo;
+
+  const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+  const hit = (x, y) => {
+    const r = renderer.domElement.getBoundingClientRect();
+    ptr.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ptr, camera);
+    const h = ray.intersectObjects(books, true)[0];
+    if (!h) return -1;
+    let o = h.object; while (o && o.userData.index === undefined) o = o.parent;
+    return o ? o.userData.index : -1;
+  };
+  const el = renderer.domElement;
+  el.addEventListener("pointerdown", (e) => { dragging = true; sx = lx = e.clientX; s0 = scroll; t0 = lt = performance.now(); moved = 0; vel = 0; el.setPointerCapture(e.pointerId); el.style.cursor = "grabbing"; });
+  el.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    moved = Math.max(moved, Math.abs(e.clientX - sx));
+    const now = performance.now(); vel = (e.clientX - lx) / Math.max(1, now - lt); lx = e.clientX; lt = now;
+    scroll = clamp(s0 - (e.clientX - sx) / unit(), -0.3, N - 0.7);
+  });
+  const end = (e) => {
+    if (!dragging) return; dragging = false; el.style.cursor = "grab";
+    if (moved < 8 && performance.now() - t0 < 450) {
+      const i = hit(e.clientX, e.clientY);
+      if (i === target) window.openItem(i); else if (i >= 0) goTo(i);
+      return;
+    }
+    goTo(scroll - vel * 0.9);
+  };
+  el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+  addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") goTo(target - 1); if (e.key === "ArrowRight") goTo(target + 1); });
+
+  // 按时间缓动：低性能的手机掉帧时，也在同样的时间内滑到位
+  let last = performance.now();
+  (function frame(now) {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.25, ((now || performance.now()) - last) / 1000); last = now || performance.now();
+    if (!dragging) scroll += (target - scroll) * (reduce ? 1 : 1 - Math.exp(-dt * 8));
+    place(); renderer.render(scene, camera);
+  })(performance.now());
+
+  addEventListener("resize", () => {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+  });
+}
+</script>
+</body>
+</html>
