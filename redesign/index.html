@@ -140,6 +140,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .k{font-size:14px;color:var(--mute)}
 .v{font-size:18px;font-weight:600}
 .v-ex{font:500 18px/1.55 var(--serif)}
+.v-plain{font-size:17px;line-height:1.6;text-wrap:pretty}
+.steps{margin:2px 0 0;padding-left:1.4em;font-size:16px;line-height:1.75;color:var(--sub)}
+.btn-hint{font-size:14px;line-height:1.55;color:var(--mute);text-wrap:pretty}
+.demo-who{align-self:flex-end;margin-bottom:-10px}
 .btns{display:flex;flex-direction:column;gap:10px;margin-top:4px}
 .btn{width:100%;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
 .solid{background:var(--ink);color:var(--paper)}
@@ -223,18 +227,28 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 // ── 内容：每部戏一套示意内容（剧情只取公开简介，台词和对话都是示意，需要团队核对） ──
 // 五本书共用的部分
 const TOOLS = {
-  web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '说一句想做什么，AI 当场做出来',
-    desc: '说一句想做什么，AI 当场做出一个能点着玩的网页。', get: '一个粉丝测试页，可以接着说怎么改', kind: 'web',
+  web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '说一句话，AI 帮你做个给粉丝玩的小网页',
+    desc: '想给粉丝做个小互动时用。说一句你想要什么，AI 当场做出一个能点着玩的小网页，不满意还能接着让它改。',
+    steps: ['说一句你想做什么网页', 'AI 当场做出来，你可以点着试', '想改就直接说，比如“换个颜色”'],
+    get: '一个能点着玩的小网页', kind: 'web',
     example: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。',
     script: [{ u: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。' }, { a: '做好了，可以点着试试。想改哪里，按住直接说。' }] },
-  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '拿到台词时', short: '拍一句台词，看意思、潜台词和怎么演',
-    desc: '拍一句台词，看字面意思、潜台词，和这场戏可以怎么演。', get: '三张小卡：意思 · 潜台词 · 怎么演', secondary: '拍一句' },
-  job: { name: '职业功课', glyph: '职', phase: '进组前', when: '进组前', short: 'AI 扮成这一行的人，和你聊十分钟',
-    desc: 'AI 扮成角色要打交道的那一行人和你聊，聊完整理成功课卡。', get: '一张职业功课卡：说法 · 动作 · 角色会用到的' },
-  bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '进组前', short: '回答问题，得到一份人物小传',
-    desc: 'AI 围绕剧情里的关键时刻一次问一个问题，你用说话回答，最后整理成小传。', get: '一份只用你说过的话写成的小传', secondary: '跳过' },
-  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '去宣传活动的车上', short: 'AI 扮记者提问，帮你理成要点',
-    desc: 'AI 扮记者问这部戏的问题，你随便说，它帮你理成两三个要点。', get: '每个问题 2–3 个要点', secondary: '再问一遍' }
+  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '看剧本时', short: '看不懂、不知道怎么说的台词，发给 AI 问',
+    desc: '拿到剧本，有一句不知道什么意思、不知道该怎么说的时候用。把这句打字或拍照发给 AI，它告诉你这句什么意思、话里藏着什么，可以怎么演。',
+    steps: ['把一句台词打字或拍照发过来', 'AI 读一遍，说说这句的重点', '整理成三张小卡给你'],
+    get: '三张小卡：这句什么意思、话里藏着什么、可以怎么演', secondary: '拍一句' },
+  job: { name: '职业功课', glyph: '职', phase: '进组前', when: '要演不熟的职业时', short: '让 AI 扮成这一行的人，你随便问',
+    desc: '角色要和你不熟的一行打交道时用，比如律师、戏班花旦。AI 假装是这一行的人，你像采访一样随便问，聊完自动整理成一张备戏笔记。',
+    steps: ['AI 先打个招呼，说它是哪一行的', '你随便问，比如“平时说话有什么习惯”', '聊两三句，自动整理成笔记'],
+    get: '一张备戏笔记：这一行怎么说话、有什么小动作、角色用得上的细节' },
+  bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '刚拿到角色时', short: '回答几个问题，帮你把角色想清楚',
+    desc: '刚拿到角色、还摸不准她是什么样的人时用。AI 像表演老师一样，一次问你一个关于角色的问题，你凭感觉回答，最后把你的回答整理成人物小传。',
+    steps: ['AI 问一个关于角色的问题', '你凭感觉回答，答不上来可以跳过', '答完三题，整理成人物小传'],
+    get: '一份人物小传，只用你自己说过的话，AI 不替你编', secondary: '跳过' },
+  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '接受采访前', short: '去采访前，让 AI 扮记者先问你一遍',
+    desc: '宣传期接受采访前用，比如在去活动的车上。AI 扮记者问你这部戏的问题，你想到什么说什么，它帮你把回答理成两三个要点，上台前看一眼就行。',
+    steps: ['AI 扮记者问你一个问题', '你想到什么说什么，不用组织语言', '帮你把回答理成两三个要点'],
+    get: '每个问题 2–3 个要点，都是你自己说过的意思', secondary: '再问一遍' }
 };
 // 每部戏的示意内容。brief 只写公开报道里的设定，也会发给豆包当背景
 const PACKS = {
@@ -256,7 +270,7 @@ const PACKS = {
         { t: '那一刻', items: ['五周年那天，她从保姆和狄立人的一个对视里，第一次觉得不对劲。'] },
         { t: '她怎么做', items: ['发现真相的那晚，她没哭没闹，一个人把五年的转账记录一条条翻出来。'] },
         { t: '她怕什么', items: ['怕的不是钱，是爸妈一辈子攒下的东西，和她对自己判断的信心。'] },
-        { t: '和狄立人的关系', items: ['还没回答'] }] } },
+        { t: '还可以想想', items: ['她和狄立人之间，有没有过真心的时候？'] }] } },
     press: { example: '《美人余》宣传采访 · 5 个问题', event: '《美人余》宣传采访',
       script: [{ a: '第 1 题：余梦从好命娇妻到冷静反击，你觉得最难演的是哪一段？' }, { u: '是她刚发现真相、还得在狄立人面前装作什么都不知道的那几场，心里翻江倒海，脸上还要笑。' },
         { a: '第 2 题：很多观众说余梦反击时一点不哭闹，你怎么理解她的冷静？' }, { u: '我觉得她不是不难过，是知道哭没用。她把难过都收起来，变成一件一件要做的事。' }],
@@ -279,7 +293,7 @@ const PACKS = {
       card: { title: '职业功课卡', tag: '戏班花旦', note: '戏曲细节以剧组戏曲老师为准。', sections: [
         { t: '后台规矩', items: ['开锣前给祖师爷上香', '不乱坐衣箱', '上妆贴片子、勒头，要好几个钟头'] },
         { t: '习惯动作', items: ['碎步走，身子稳', '看人先用眼角，先看再笑', '手里常捏着帕子或扇子'] },
-        { t: '江飞燕会用到的', items: ['借戏班身份进出富人家', '用花旦的眼神和腔调掩住试探', '卸了妆换一张脸，是骗术师的另一面'] }] } },
+        { t: '江飞燕会用到的', items: ['花旦的身份是她的掩护：台上一张脸，台下一张脸', '花旦看人的眼神，正好用来读心、试探', '卸了妆就能换一张脸，易容是骗术师的另一面'] }] } },
     bio: { example: '江飞燕 · 戏班花旦，也是天相派安插的卧底',
       script: [{ a: '第 1 题：江飞燕小时候被送进天相派那天，她记住了什么？' }, { u: '她记住了娘转身走的背影，没有回头。从那天起她就学会了不哭。' },
         { a: '第 2 题：大婚那天，她看着上官诚明的时候在想什么？' }, { u: '她想，要是我只是个唱戏的就好了。' },
@@ -288,7 +302,7 @@ const PACKS = {
         { t: '成长经历', items: ['被送进天相派那天，她只记得娘没回头的背影，从那天起学会了不哭。'] },
         { t: '大婚那天', items: ['她看着上官诚明，心想：要是我只是个唱戏的就好了。'] },
         { t: '她怕什么', items: ['怕演得太久，忘了哪张脸才是自己的。'] },
-        { t: '和师门的关系', items: ['还没回答'] }] } },
+        { t: '还可以想想', items: ['她对天相派，是恨，还是放不下？'] }] } },
     press: { example: '《我不是大师》追剧团 · 5 个问题', event: '《我不是大师》追剧团',
       script: [{ a: '第 1 题：江飞燕有很多张脸，你演的时候怎么分清她哪句是真、哪句是假？' }, { u: '我给她定了个规矩：骗人的时候她反而最放松，说真话的时候手会不自觉地停住。' },
         { a: '第 2 题：这次花旦的妆一画就是好几个小时，最难的是什么？' }, { u: '勒头的时候真的很疼，但一勒上，人一下就进到那个年代里了。' }],
@@ -299,7 +313,7 @@ const PACKS = {
       script: [{ u: '江湖上的局，从来不是骗人信，是让人自己愿意信。' }, { a: '这句像在教人做局，也像在说她自己。我分成三张卡给你。' }],
       card: { title: '台词速懂', tag: '做局', note: '这是示意台词，不是剧中原句；民国江湖行话请团队核对。', sections: [
         { t: '字面意思', items: ['行骗的关键不是说服别人，而是让对方自己说服自己。'] },
-        { t: '潜台词', items: ['她太懂人心，所以也最难相信别人。', '对上官诚明说，像是提醒，也像是认错。'] },
+        { t: '潜台词', items: ['她太懂怎么让人相信，所以也最提防别人对她用同一招。', '说的是做局的道理，也是在说她自己。'] },
         { t: '这时候怎么演', items: ['像在教人，又像在提醒自己，眼神带一点累。', '说到“愿意信”时放慢，嘴角似笑非笑。'] }] } }
   }
 };
@@ -478,7 +492,8 @@ function ctx() {
 }
 // 每本书对 AI 的要求
 function sysFor(id) {
-  const d = drama(), n = S.msgs.filter(m => m.role === 'a').length + 1;
+  // 只数已经说完的题：新的一条空消息在问之前就放进去了，不能算
+  const d = drama(), n = S.msgs.filter(m => m.role === 'a' && m.text).length + 1;
   return ctx() + {
     job: '现在你扮演一位做了很多年的' + d.job + '，帮她理解' + d.role + '会接触到的这一行。' + (n === 1 ? '先用一两句话自我介绍，再问她想了解什么。' : '') +
       '像真人聊天一样口语化，每次最多三句话。多讲具体的小细节、小习惯；能和' + d.role + '在剧里的处境连上，就顺口点一句。不要用列表和 markdown。',
@@ -824,17 +839,17 @@ function toolView() {
   const who = S.toolId === 'press' ? 'AI 记者' : S.toolId === 'job' ? 'AI ' + drama().job : 'AI';
   const msgs = S.msgs.map((m, i) => m.role === 'a'
     ? `<div class="msg-ai"><span class="who">${esc(who)}</span><span class="txt" data-msg="${i}">${esc(m.text)}</span></div>`
-    : `<div class="msg-user" data-msg="${i}">${esc(m.text)}</div>`).join('');
+    : `${S.mode === 'auto' ? '<span class="who demo-who">示范回答</span>' : ''}<div class="msg-user" data-msg="${i}">${esc(m.text)}</div>`).join('');
   const card = S.aiCard || t.card || { sections: [] };
   let label = '按住 说话';
   if (S.recording) label = '松开 发送';
-  else if (S.stage === 'intro') label = '先选上面一种方式';
+  else if (S.stage === 'intro') label = '先点上面的按钮开始';
   else if (S.stage === 'thinking') label = '正在整理…';
-  else if (S.stage === 'session' && !S.waiting) label = S.mode === 'auto' ? '正在演示…' : 'AI 在说…';
+  else if (S.stage === 'session' && !S.waiting) label = S.mode === 'auto' ? '正在示范，看着就行…' : 'AI 在说…';
   else if (S.stage === 'session' && S.waiting) label = '按住 说话回答';
   else if (S.stage === 'result' && isWeb) label = talk ? '按住 说要怎么改' : '都改好了';
   const result = S.stage === 'result';
-  const sec = !t.secondary || result ? ''
+  const sec = !t.secondary || result || S.stage === 'intro' ? ''
     : S.ai && S.toolId === 'line' && S.mode === 'self'
       ? `<label class="sec-btn" style="opacity:${S.waiting ? 1 : .4}">${esc(t.secondary)}<input type="file" accept="image/*" capture="environment" data-photo hidden${S.waiting ? '' : ' disabled'}></label>`
       : `<button class="sec-btn" data-act="secondary" style="opacity:${S.waiting ? 1 : .4}">${esc(t.secondary)}</button>`;
@@ -853,11 +868,14 @@ function toolView() {
       </div>`;
   return `<div class="topbar"><button class="back" data-act="back">‹ 返回</button><span class="tb-title">${esc(t.name)}</span><span class="tb-phase">${esc(t.phase)}</span></div>
     <div class="convo" data-scroll>
-      <div class="desc"><span class="glyph-sm">${esc(t.glyph)}</span><span class="desc-t">${esc(t.desc)}</span></div>
+      ${S.stage === 'intro' ? '' : `<div class="desc"><span class="glyph-sm">${esc(t.glyph)}</span><span class="desc-t">${esc(t.short)}</span></div>`}
       ${S.stage === 'intro' ? `<div class="panel">
-        <div class="kv"><span class="k">你会得到</span><span class="v">${esc(t.get)}</span></div>
-        <div class="kv"><span class="k">已经帮你填好的例子</span><span class="v-ex">${esc(t.example)}</span></div>
-        <div class="btns"><button class="btn solid" data-act="auto">直接试试</button><button class="btn outline" data-act="self">换我来说</button></div>
+        <div class="kv"><span class="k">这是做什么的</span><span class="v-plain">${esc(t.desc)}</span></div>
+        <div class="kv"><span class="k">怎么用</span><ol class="steps">${t.steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol></div>
+        <div class="kv"><span class="k">最后你会得到</span><span class="v">${esc(t.get)}</span></div>
+        <div class="kv"><span class="k">示范用的例子</span><span class="v-ex">${esc(t.example)}</span></div>
+        <div class="btns"><button class="btn solid" data-act="auto">先看一遍示范</button><button class="btn outline" data-act="self">我自己来</button></div>
+        <span class="btn-hint">示范：AI 用上面的例子自己演一遍，你只看。我自己来：换成你来回答。</span>
       </div>` : ''}
       ${msgs}
       ${S.stage === 'thinking' ? `<div class="thinking"><span class="tdots"><i></i><i></i><i></i></span><span>${esc(S.thinkText || '正在整理成卡片')}</span></div>` : ''}
@@ -924,6 +942,7 @@ function render() {
   else h = (S.screen === 'saved' ? savedView() : S.screen === 'phrases' ? phrasesView() : homeView()) + tabsView();
   if (S.sheet) h += sheetView();
   const say = $('.say'), typed = say ? say.value : '';
+  const box = $('[data-scroll]'), top = box ? box.scrollTop : 0;
   $('#view').innerHTML = h;
   const say2 = $('.say'); if (say2 && typed) say2.value = typed;
   fitShelf();
@@ -935,7 +954,19 @@ function render() {
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => mic.addEventListener(ev, micUp));
     mic.addEventListener('contextmenu', e => e.preventDefault());
   }
-  scrollDown();
+  placeScroll(top);
+}
+// 说明页从头看；对话中跟着最新一句；结果刚出来时停在结果卡顶上，之后不再乱跳
+let lastView = '';
+function placeScroll(top) {
+  const box = $('[data-scroll]'), view = S.screen === 'tool' ? S.toolId + ':' + S.stage : '';
+  if (box) {
+    if (S.stage === 'intro') box.scrollTop = 0;
+    else if (S.stage !== 'result') box.scrollTop = box.scrollHeight;
+    else if (view !== lastView) { const c = $('.card, .webwrap'); box.scrollTop = c ? c.offsetTop - box.offsetTop - 12 : 0; }
+    else box.scrollTop = top;
+  }
+  lastView = view;
 }
 // 滑书架时只更新书的大小和下方说明，不整页重画
 function onSwipe(e) {
