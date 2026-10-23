@@ -15,9 +15,10 @@
 ## 2. 技术形态（刻意保持简单）
 
 - **零依赖**：没有 npm 依赖、没有构建工具、没有框架。Node 18+。
-- `app.html`（约 1260 行）：**整个前端都在这一个文件里**（CSS + 原生 JS + 3D 书架模块）。不是完整 HTML 文档，只是 `<body>` 内的片段。
-- `server.js`：把 `app.html` 套上 `<head>` 外壳发出去；`/api/chat`（SSE 转发到火山方舟，密钥在服务器）、`/api/health`、`/vendor/*` 静态文件。内置限流、访问码。
-- `scripts/build-static.js`：同样的外壳 + `app.html` → `dist/index.html`，并复制 `vendor/` 和 `.nojekyll`。`dist/` 被 `.gitignore` 忽略。
+- `app.html`（约 1260 行）：书架和五个功能都在这一个文件里（CSS + 原生 JS + 3D 书架模块）。不是完整 HTML 文档，只是 `<body>` 内的片段。
+- `compare.html`：表情对比，独立整页，**不要塞进 `app.html`**。五段参考视频在 `assets/expression-compare/`，路径集中在页面里的 `REFS`。
+- `server.js`：把 `app.html` 套上 `<head>` 外壳发出去；另发 `/compare.html` 和 `/assets/expression-compare/*`；`/api/chat`（SSE 转发到火山方舟，密钥在服务器）、`/api/health`、`/vendor/*` 静态文件。内置限流、访问码。
+- `scripts/build-static.js`：同样的外壳 + `app.html` → `dist/index.html`，并复制 `compare.html`、`assets/`、`vendor/` 和 `.nojekyll`。`dist/` 被 `.gitignore` 忽略。
 - `scripts/mock-ark.js`：本地模拟火山方舟，开发时不花钱。
 - `vendor/three/`：three.js r165（本地化，**不要改成 CDN**，国内访问 jsdelivr 不稳）。
 - `mockups/`：首页 UI 方案草稿（A–F），F 是最终采用的。只作历史参考，可删。
@@ -59,14 +60,14 @@ npm run dev:mock   # 终端 2：http://localhost:8787
 node server.js     # 真实 AI：先 cp .env.example .env 填 ARK_API_KEY
 ```
 
-不需要安装任何东西。改完 `app.html` 刷新即可。
+不需要安装任何东西。改完 `app.html` 或 `compare.html` 刷新即可。表情对比：http://localhost:8787/compare.html （摄像头要 localhost 或 https）。
 
 ## 5. 部署（GitHub Pages，静态版）
 
 ```bash
 git checkout main && git pull
 npm run build:static
-# 把 dist/ 的全部内容（index.html、vendor/、.nojekyll）覆盖到 gh-pages 分支根目录并推送：
+# 把 dist/ 的全部内容（index.html、compare.html、assets/、vendor/、.nojekyll）覆盖到 gh-pages 分支根目录并推送：
 git clone --branch gh-pages --single-branch <repo> /tmp/ghp
 cd /tmp/ghp && git rm -rq . ; cp -r <项目>/dist/. . ; git add -A && git commit -m "部署" && git push origin gh-pages
 ```
@@ -76,7 +77,7 @@ cd /tmp/ghp && git rm -rq . ; cp -r <项目>/dist/. . ; git add -A && git commit
 
 ## 6. 当前状态
 
-**已完成**：五个功能全部可用（演示模式 + 真实 AI 两条路径都测过，AI 用的是 mock）；3D 书架首页（滑动、点中间进入、点旁边拉到中间、返回按钮 + 返回手势）；无 WebGL 兜底列表；首页底部可展开的 API Key 设置；收藏 / 话术卡；已上线。
+**已完成**：五个功能全部可用（演示模式 + 真实 AI 两条路径都测过，AI 用的是 mock）；3D 书架首页（滑动、点中间进入、点旁边拉到中间、返回按钮 + 返回手势）；无 WebGL 兜底列表；首页底部可展开的 API Key 设置；收藏 / 话术卡；已上线。另有独立页「表情对比」（`compare.html`，五段参考视频，录像只留在浏览器里）。
 
 **测试方式**：Playwright（python）+ `--use-gl=swiftshader` 模拟 390px 手机，沙箱内无法访问外网。**从未在真机上测过。**
 

@@ -61,6 +61,55 @@ function readBody(req, max = 12 * 1024 * 1024) {
 
 const send = (res, code, obj) => { res.writeHead(code, { "content-type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
 
+const FILE_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+};
+
+// 只放行表情对比的参考视频，避免把 .env 等文件读出去。
+function expressionAsset(pathname) {
+  const prefix = "/assets/expression-compare/";
+  if (!pathname.startsWith(prefix)) return null;
+  const name = pathname.slice(prefix.length);
+  if (!name || name !== path.basename(name) || name.includes("..")) return null;
+  if (!/\.(mp4|webm)$/i.test(name)) return null;
+  const root = path.join(DIR, "assets", "expression-compare");
+  const file = path.resolve(root, name);
+  if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return null;
+  return file;
+}
+
+// iPhone 播 mp4 需要支持 Range，否则有的系统会一直转圈。
+function sendFile(req, res, file, cache) {
+  const stat = fs.statSync(file);
+  const ext = path.extname(file).toLowerCase();
+  const type = FILE_TYPES[ext] || "application/octet-stream";
+  const headers = { "content-type": type, "accept-ranges": "bytes", "cache-control": cache };
+  const range = req.headers.range;
+  if (range && (ext === ".mp4" || ext === ".webm")) {
+    const m = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (!m) { res.writeHead(416, { "content-range": `bytes */${stat.size}` }); return res.end(); }
+    const start = m[1] === "" ? 0 : Number(m[1]);
+    let end = m[2] === "" ? stat.size - 1 : Number(m[2]);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end < start || start >= stat.size) {
+      res.writeHead(416, { "content-range": `bytes */${stat.size}` });
+      return res.end();
+    }
+    end = Math.min(end, stat.size - 1);
+    headers["content-range"] = `bytes ${start}-${end}/${stat.size}`;
+    headers["content-length"] = String(end - start + 1);
+    res.writeHead(206, headers);
+    return fs.createReadStream(file, { start, end }).pipe(res);
+  }
+  headers["content-length"] = String(stat.size);
+  res.writeHead(200, headers);
+  fs.createReadStream(file).pipe(res);
+}
+
 async function chat(req, res) {
   if (!ARK_API_KEY) return send(res, 503, { error: "AI 还没配置（缺 ARK_API_KEY）" });
   if (!codeOK(req.headers["x-access-code"])) return send(res, 401, { error: "访问码不对" });
@@ -119,6 +168,14 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" });
       return res.end(page());
     }
+    // 表情对比是独立整页，不塞进 app.html。
+    if (req.method === "GET" && (url.pathname === "/compare" || url.pathname === "/compare.html")) {
+      return sendFile(req, res, path.join(DIR, "compare.html"), "no-cache");
+    }
+    if (req.method === "GET") {
+      const media = expressionAsset(url.pathname);
+      if (media) return sendFile(req, res, media, "public, max-age=300");
+    }
     // 书架用的 three.js 放在 vendor/ 下，只允许读这个目录里的 .js / 授权文件
     if (req.method === "GET" && url.pathname.startsWith("/vendor/")) {
       const rel = decodeURIComponent(url.pathname).replace(/^\/+/, "");
@@ -142,6 +199,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`一桐的 AI 排练室：http://localhost:${PORT}`);
+  console.log(`表情对比：http://localhost:${PORT}/compare.html`);
   console.log(ARK_API_KEY ? `AI：火山方舟 ${ARK_MODEL}` : "AI：未配置 ARK_API_KEY，网页会进入演示模式");
   if (!ACCESS_CODE) console.log("提醒：没有设置 ACCESS_CODE，任何拿到链接的人都能用");
 });

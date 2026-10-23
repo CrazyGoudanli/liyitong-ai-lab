@@ -18,6 +18,28 @@
 
 另有“我的收藏”（存在她手机本地）和“随身话术卡”。
 
+## 表情对比（单独一页）
+
+手机竖屏打开。上面放参考视频，五个标签切换：愤怒排斥、害羞躲闪、害怕躲避、伤心抗拒、疲惫低头。下面用前置摄像头，点「录制」再点「停止」，然后点「播放」，上面的参考和刚录的一段一起从头放。
+
+- 本地：`npm run dev:mock` 后打开 http://localhost:8787/compare.html
+- 摄像头只在 **localhost** 或 **https** 下能用。手机不要打开 `http://电脑的局域网 IP`，浏览器会拒绝摄像头。
+- 用自己的手机测：电脑按下面的方式套上 HTTPS（Caddy），手机打开 `https://你的域名/compare.html`。或者等这页部署到 GitHub Pages 后，用手机打开 https://crazygoudanli.github.io/liyitong-ai-lab/compare.html
+- 电脑上先看布局：浏览器宽度调到约 390px。localhost 本身就能调摄像头。
+- 录像只在这一页的内存里，不上传、不进服务器，刷新就没了。
+
+换参考视频：把新的 mp4 放进 `assets/expression-compare/`，改 `compare.html` 里的 `REFS`（五行 `label` / `src`，顺序就是标签从左到右、从上到下）。现用文件：
+
+| 标签 | 文件 |
+|---|---|
+| 愤怒排斥 | `assets/expression-compare/01-愤怒排斥.mp4` |
+| 害羞躲闪 | `assets/expression-compare/02-害羞躲闪.mp4` |
+| 害怕躲避 | `assets/expression-compare/03-害怕躲避.mp4` |
+| 伤心抗拒 | `assets/expression-compare/04-伤心抗拒.mp4` |
+| 疲惫低头 | `assets/expression-compare/05-疲惫低头.mp4` |
+
+`npm run build:static` 会把 `compare.html` 和 `assets/` 一起放进 `dist/`。
+
 **演示顺序建议**：1 → 2 → 3，最容易“哇”。
 
 **首页书架**：three.js 放在 `vendor/three/`（不依赖外部网站）；手机没有 WebGL 或加载失败时，首页自动变成列表。`npm run build:static` 会把 `vendor/` 一起打进 `dist/`。
@@ -38,7 +60,7 @@
 
 - 密钥只存在那台手机的浏览器里，**不要写进仓库**（仓库是公开的）
 - 是否能直接调用，取决于火山方舟是否允许网页跨域请求，需要在手机上点“保存并测试”确认；不行的话用下面的服务器版
-- 更新在线版：合并到 `main` → `npm run build:static` → 把 `dist/` 的内容（含 `vendor/`、`.nojekyll`）推到 `gh-pages` 分支。部署步骤详见 HANDOFF.md
+- 更新在线版：合并到 `main` → `npm run build:static` → 把 `dist/` 的内容（含 `compare.html`、`assets/`、`vendor/`、`.nojekyll`）推到 `gh-pages` 分支。部署步骤详见 HANDOFF.md
 
 ## 部署服务器版（以搬瓦工 VPS 为例）
 
@@ -91,7 +113,7 @@ npm run dev:mock   # 终端 2：打开 http://localhost:8787
 
 - 只用公开资料，不上传未播剧本
 - AI 不评价她的表演，不打分，不提外貌、身材、年龄
-- 不保存录音和照片；收藏只存在她自己的手机里
+- 不保存录音和照片；收藏只存在她自己的手机里。表情对比的录像同样只留在当次打开的页面里
 - 服务器不记录对话内容
 
 ## 已知限制
@@ -99,3 +121,4 @@ npm run dev:mock   # 终端 2：打开 http://localhost:8787
 - 说话输入依赖浏览器：iPhone Safari 可用；微信内置浏览器不支持，这时用手机键盘上的麦克风
 - 朗读用手机自带的语音，声音因机型而异
 - 还没有做“实时语音通话”式的对话，现在是“说一句 → AI 回一句并朗读”
+- 表情对比的摄像头：iPhone 用 Safari、安卓用 Chrome。微信里经常打不开摄像头

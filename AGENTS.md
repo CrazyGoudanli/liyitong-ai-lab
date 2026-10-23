@@ -3,7 +3,7 @@
 先读 `HANDOFF.md`（架构、状态、坑）和 `README.md`。
 
 规则：
-- 零依赖、无构建：前端全在 `app.html`，服务端 `server.js`，不要引入框架/npm 依赖。
+- 零依赖、无构建：书架和五个功能在 `app.html`，服务端 `server.js`，不要引入框架/npm 依赖。表情对比是单独的 `compare.html`，不要塞进 `app.html`。
 - `vendor/three/` 是本地化的 three.js，不要改成 CDN。
 - 绝不提交 API Key（仓库是公开的）；`.env` 已被忽略。
 - 产品底线：不评价/打分表演、不提外貌身材年龄、不保存录音和照片（见 `RULES`）。

@@ -17,4 +17,8 @@ fs.writeFileSync(path.join(out, ".nojekyll"), "");
 // 书架用的 three.js 一起打包，不依赖外部网站（国内也能稳定加载）
 fs.rmSync(path.join(out, "vendor"), { recursive: true, force: true });
 fs.cpSync(path.join(ROOT, "vendor"), path.join(out, "vendor"), { recursive: true });
-console.log("已生成 dist/index.html");
+// 表情对比是独立页面，参考视频在 assets/expression-compare/，静态站也要带上。
+fs.copyFileSync(path.join(ROOT, "compare.html"), path.join(out, "compare.html"));
+fs.rmSync(path.join(out, "assets"), { recursive: true, force: true });
+fs.cpSync(path.join(ROOT, "assets"), path.join(out, "assets"), { recursive: true });
+console.log("已生成 dist/index.html、dist/compare.html、dist/assets/");
