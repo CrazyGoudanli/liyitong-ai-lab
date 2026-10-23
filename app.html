@@ -261,9 +261,16 @@ function parseJSON(text) {
 
 /* ───────────── AI 接入：自建服务器（豆包）→ Claude 预览 → 演示模式 ───────────── */
 const AI = { mode: "connecting", sample: null };
+// GitHub Pages 无尾斜杠时，相对路径 api/* 会解析错；统一从当前目录拼
+const apiURL = (path) => {
+  let dir = location.pathname;
+  if (dir.endsWith(".html")) dir = dir.slice(0, dir.lastIndexOf("/") + 1);
+  else if (!dir.endsWith("/")) dir += "/";
+  return dir + String(path).replace(/^\//, "");
+};
 async function initAI() {
   try {
-    const r = await fetch("api/health", { cache: "no-store" });
+    const r = await fetch(apiURL("api/health"), { cache: "no-store" });
     if (r.ok) { const j = await r.json(); if (j && j.ai) { AI.mode = "server"; AI.label = j.label || "豆包"; return showMode(); } }
   } catch {}
   const ark = store.get("ark", null);
@@ -293,6 +300,47 @@ async function shrinkImage(file) {
 }
 const blobToDataURL = (b) => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(f.result); f.onerror = rej; f.readAsDataURL(b); });
 
+const ARK_BASE = "https://ark.cn-beijing.volces.com/api/v3";
+const ARK_MODEL = "doubao-seed-2-1-pro-260915";
+const messages0 = (m) => m.map(x => ({ role: x.role, content: x.content }));
+const isAbort = (e) => !!(e && (e.name === "AbortError" || e.code === "ABORT_ERR" || e.code === "cancelled"));
+// 直连时：先关思考；若模型报不支持 disabled，记住并改用不传 thinking
+let arkThinkMode = "disable"; // "disable" | "omit"
+
+function arkRequestBody(msgs, maxTokens) {
+  const body = { model: (AI.ark && AI.ark.model) || ARK_MODEL, messages: msgs, stream: true, max_tokens: maxTokens };
+  if (arkThinkMode === "disable") body.thinking = { type: "disabled" };
+  return body;
+}
+function thinkingUnsupported(status, detail) {
+  return status === 400 && /thinking|深度思考|reasoning/i.test(detail || "");
+}
+async function readErr(r) {
+  const raw = (await r.text().catch(() => "")).slice(0, 400);
+  let msg = raw;
+  try { const j = JSON.parse(raw); msg = j.error?.message || j.error || j.detail || raw; } catch {}
+  return { detail: String(msg), raw };
+}
+async function fetchArkDirect(msgs, maxTokens, signal) {
+  const url = (AI.ark.base || ARK_BASE) + "/chat/completions";
+  const headers = { "content-type": "application/json", authorization: "Bearer " + AI.ark.key };
+  let r = await fetch(url, { method: "POST", signal, headers, body: JSON.stringify(arkRequestBody(msgs, maxTokens)) });
+  if (!r.ok) {
+    const { detail, raw } = await readErr(r);
+    if (thinkingUnsupported(r.status, detail + raw) && arkThinkMode === "disable") {
+      arkThinkMode = "omit";
+      r = await fetch(url, { method: "POST", signal, headers, body: JSON.stringify(arkRequestBody(msgs, maxTokens)) });
+      if (!r.ok) {
+        const again = await readErr(r);
+        throw { code: "upstream_error", status: r.status, detail: again.detail };
+      }
+      return r;
+    }
+    throw { code: "upstream_error", status: r.status, detail };
+  }
+  return r;
+}
+
 /** ask({system, messages, json, images, onText, onStatus, tier, maxTokens, signal}) → string | object */
 async function ask({ system, messages = [], json = false, images = [], onText, onStatus, tier = "quick", maxTokens = 1500, signal }) {
   await waitAI();
@@ -308,7 +356,7 @@ async function ask({ system, messages = [], json = false, images = [], onText, o
   if (AI.mode === "server") {
     const body = { messages: [{ role: "system", content: system }, ...messages], maxTokens };
     if (images.length) body.images = await Promise.all(images.map(blobToDataURL));
-    const r = await fetch("api/chat", {
+    const r = await fetch(apiURL("api/chat"), {
       method: "POST", signal,
       headers: { "content-type": "application/json", "x-access-code": store.get("code", "") },
       body: JSON.stringify(body),
@@ -323,29 +371,17 @@ async function ask({ system, messages = [], json = false, images = [], onText, o
       const last = [...msgs].reverse().find(m => m.role === "user");
       if (last) last.content = [{ type: "text", text: last.content }, ...urls.map(url => ({ type: "image_url", image_url: { url } }))];
     }
-    // Seed 默认开深度思考时，会长时间只推 reasoning_content，页面一直转圈；排练室默认关掉。
-    const r = await fetch((AI.ark.base || ARK_BASE) + "/chat/completions", {
-      method: "POST", signal,
-      headers: { "content-type": "application/json", authorization: "Bearer " + AI.ark.key },
-      body: JSON.stringify({
-        thinking: { type: "disabled" },
-        model: AI.ark.model || ARK_MODEL,
-        messages: msgs,
-        stream: true,
-        max_tokens: maxTokens,
-      }),
-    });
+    const r = await fetchArkDirect(msgs, maxTokens, signal);
     return finishSSE(r, json, onText, onStatus);
   }
   throw { code: "demo" };
 }
-const ARK_BASE = "https://ark.cn-beijing.volces.com/api/v3";
-const ARK_MODEL = "doubao-seed-2-1-pro-260915";
-const messages0 = (m) => m.map(x => ({ role: x.role, content: x.content }));
-const isAbort = (e) => !!(e && (e.name === "AbortError" || e.code === "ABORT_ERR" || e.code === "cancelled"));
 async function finishSSE(r, json, onText, onStatus) {
   try {
-    if (!r.ok || !r.body) throw { code: "upstream_error", status: r.status };
+    if (!r.ok || !r.body) {
+      const { detail } = r.body ? await readErr(r) : { detail: "" };
+      throw { code: "upstream_error", status: r.status, detail };
+    }
     const reader = r.body.getReader(), dec = new TextDecoder();
     let buf = "", text = "", sawReason = false;
     for (;;) {
@@ -376,6 +412,25 @@ async function finishSSE(r, json, onText, onStatus) {
   }
 }
 const isHardOff = (e) => ["demo", "not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(e && e.code);
+/** 已连接 AI 时，不要把失败伪装成「没连上」；把真实原因亮出来 */
+function askFailHint(e) {
+  if (!e || isAbort(e) || isHardOff(e) || e.code === "need_code") return null;
+  if (AI.mode !== "server" && AI.mode !== "direct") return null;
+  if (e.code === "thinking_only") return "模型只返回了思考过程、没有正文。请换一个模型，或在服务器 .env 用 ARK_EXTRA 关闭深度思考。";
+  if (e.code === "empty_completion") return "模型连上了，但没有返回正文。请再试一次，或换一个更快的模型。";
+  if (e.code === "invalid_json") return "模型返回的内容不是可用的 JSON，请再试一次。";
+  if (e.status === 401) return "密钥或访问码不对。";
+  if (e.status === 404) return "模型 ID 不对，或这个账号没开通这个模型。";
+  if (e.status === 429) return "请求太快或额度用尽，稍后再试。";
+  if (e.detail) return `AI 服务报错（${e.status || "?"}）：${String(e.detail).slice(0, 160)}`;
+  if (e.status) return `AI 服务返回了错误（${e.status}）。`;
+  if (e.name === "TypeError" || /Failed to fetch|NetworkError|Load failed/i.test(String(e.message || e))) {
+    return AI.mode === "direct"
+      ? "网页连不上火山方舟（可能是跨域限制）。请改用服务器版，或确认密钥与接口地址。"
+      : "连不上本机 AI 服务，请确认服务器在运行。";
+  }
+  return "请求失败，请再试一次。";
+}
 
 /* ───────────── 访问码 ───────────── */
 function askCode() {
@@ -593,6 +648,8 @@ function sceneWeb(root) {
       html = out; show(false);
     } catch (e) {
       if (isAbort(e)) return;
+      const hint = askFailHint(e);
+      if (hint) { preview.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "没做成" }), el("p", { text: hint }))); return; }
       html = FALLBACK_QUIZ; show(true);
     } finally { box.busy = false; }
   }
@@ -672,6 +729,8 @@ ${RULES}`;
       t.textContent = ans; turns.push({ role: "assistant", content: ans }); TTS.say(ans);
     } catch (e) {
       if (isAbort(e)) return;
+      const hint = askFailHint(e);
+      if (hint) { t.textContent = hint; return; }
       const list = PRO_DEMO[pro.key]; const ans = list[demoI++ % list.length];
       t.textContent = ans; reply.append(el("span", { class: "who", text: "（示例回答，AI 没连上）" }));
       turns.push({ role: "assistant", content: ans }); TTS.say(ans);
@@ -687,7 +746,11 @@ ${RULES}`;
       data = await ask({ json: true, tier: "quick", onStatus: (s) => { wait.textContent = s; }, system: `下面是演员和一位${pro.who}的聊天记录。请整理成一张给演员看的职业功课卡，帮她演好${pro.for}。
 只回复一个 JSON 对象，格式：{"常用说法":["…"],"习惯动作":["…"],"一天怎么过":"…","可以问剧组顾问的问题":["…"]}，每个列表 2-4 条，每条一句话。
 可以补充这个职业的常识，但要标注为通用情况，不要编造剧情。${RULES}\n\n聊天记录：\n${talk}`, messages: [{ role: "user", content: "请整理。" }] });
-    } catch (e) { data = PRO_CARD_DEMO; demo = true; }
+    } catch (e) {
+      const hint = askFailHint(e);
+      if (hint) { out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "没做成" }), el("p", { text: hint }))); cardBtn.disabled = false; return; }
+      data = PRO_CARD_DEMO; demo = true;
+    }
     out.replaceChildren(renderObjCard(`${pro.who}功课卡 · ${pro.for}`, data, demo, "pro"));
     cardBtn.disabled = false;
   }
@@ -754,6 +817,8 @@ function scenePress(root) {
 不加她没说过的观点，不评价好坏。${RULES}`, messages: [{ role: "user", content: ans }] });
     } catch (e) {
       if (isAbort(e)) { box.busy = false; return; }
+      const hint = askFailHint(e);
+      if (hint) { out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "没做成" }), el("p", { text: hint }))); box.busy = false; return; }
       demo = true; data = { "你刚才说的": [ans.slice(0, 80) + (ans.length > 80 ? "…" : "")], "提示": "连上 AI 后，这里会变成 2-3 个要点和一句话版本。" };
     }
     const c = renderObjCard(set.qs[i], data, demo, "press");
@@ -812,6 +877,8 @@ function sceneLine(root) {
         messages: [{ role: "user", content: img ? "请看图片里的台词。" : `台词：${text}` }] });
     } catch (e) {
       if (isAbort(e)) { box.busy = false; return; }
+      const hint = askFailHint(e);
+      if (hint) { out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "没做成" }), el("p", { text: hint }))); box.busy = false; return; }
       demo = true;
       data = demoData || { "提示": "AI 没连上。连上以后，这里会解释你拍的或输入的这句台词。先点上面的示例看看效果。" };
     }
@@ -861,7 +928,9 @@ function sceneBio(root) {
 请问她下一个问题（第 ${qa.length + 1} 题，共 ${BIO_N} 题）。要求：只问一个问题，不超过 25 个字；从具体的生活细节问起，帮她想清楚人物；不要重复已经问过的方向；只输出问题本身。${RULES}`,
         messages: [{ role: "user", content: hist ? `已经问过的：\n${hist}` : "开始吧。" }] })).trim();
     } catch (e) {
-      if (isAbort(e)) return;
+      if (isAbort(e)) { box.busy = false; return; }
+      const hint = askFailHint(e);
+      if (hint) { t.textContent = hint; box.busy = false; return; }
       curQ = BIO_QS[qa.length % BIO_QS.length];
     }
     t.textContent = curQ; TTS.say(curQ); box.busy = false;
@@ -884,8 +953,15 @@ function sceneBio(root) {
 只回复一个 JSON 对象：{"一句话":"…","成长经历":"…","她想要什么":"…","她怕什么":"…","和别人的关系":["…"],"一个细节":"…"}。${RULES}`,
         messages: [{ role: "user", content: real.map(x => `问：${x.q}\n答：${x.a}`).join("\n\n") }] });
     } catch (e) {
-      demo = true;
-      data = real.length ? Object.fromEntries(real.map(x => [x.q, x.a])) : { "提示": "先回答几个问题，再生成小传。" };
+      if (e && e.code === "empty") {
+        demo = true;
+        data = { "提示": "先回答几个问题，再生成小传。" };
+      } else {
+        const hint = askFailHint(e);
+        if (hint) { out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "没做成" }), el("p", { text: hint }))); startBtn.disabled = false; startBtn.textContent = "重新来一遍"; return; }
+        demo = true;
+        data = real.length ? Object.fromEntries(real.map(x => [x.q, x.a])) : { "提示": "先回答几个问题，再生成小传。" };
+      }
     }
     const c = renderObjCard("人物小传 · " + role.split(/[（(：:，,]/)[0], data, demo, "bio");
     c.querySelector(".hint").textContent = demo ? "AI 没连上，这里先把你的回答原样列出来。" : "这是你说过的话整理出来的，可以随时改。";
@@ -963,11 +1039,11 @@ function renderSetup(root, inline) {
       });
       out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接成功" }), el("p", { text: "AI 回复：" + t.trim() }), el("button", { class: "btn primary", type: "button", text: "回到首页", "data-go": "home" })));
     } catch (e) {
-      const why = e && e.status === 401 ? "密钥不对或已失效。"
+      const why = askFailHint(e)
+        || (e && e.status === 401 ? "密钥不对或已失效。"
         : e && e.status === 404 ? "模型 ID 不对，或这个账号没开通这个模型。"
-        : e && (e.code === "thinking_only" || e.code === "empty_completion") ? "模型连上了，但只返回了思考过程、没有正文。请确认请求里已关闭深度思考，或换一个更快的模型。"
         : e && e.status ? `火山方舟返回了错误（${e.status}）。`
-        : "网页连不上火山方舟。可能是火山方舟不允许网页直接调用（浏览器跨域限制），这种情况要用服务器版。";
+        : "网页连不上火山方舟。可能是火山方舟不允许网页直接调用（浏览器跨域限制），这种情况要用服务器版。");
       out.replaceChildren(el("div", { class: "card" }, el("div", { class: "card-k", text: "连接失败" }), el("p", { text: why })));
     }
   }
