@@ -18,22 +18,23 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{background:#E9E6DF;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
 [hidden]{display:none!important}
 @keyframes dcpulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.35);opacity:0}}
 @keyframes dcdot{0%,80%,100%{opacity:.25}40%{opacity:1}}
 
-#app{position:relative;max-width:430px;margin:0 auto;height:100vh;height:100dvh;background:var(--paper);display:flex;flex-direction:column;overflow:hidden;padding-top:env(safe-area-inset-top,0px)}
+#app{--k:1;position:relative;max-width:430px;margin:0 auto;height:100vh;height:100dvh;background:var(--paper);display:flex;flex-direction:column;overflow:hidden;padding-top:env(safe-area-inset-top,0px)}
 @media (min-width:600px){#app{width:390px;height:min(844px,calc(100dvh - 48px));margin:24px auto;border-radius:28px;box-shadow:0 30px 60px rgba(0,0,0,.18)}}
 #view{flex:1;min-height:0;display:flex;flex-direction:column}
 .page{flex:1;min-height:0;overflow-y:auto;padding:18px 22px 24px}
 
 /* 首页 */
-.home-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 22px;position:relative;z-index:5}
-.hello{font:700 26px/1.3 var(--serif);margin:0;text-wrap:pretty}
-.picker{position:relative;flex:none}
-.pill{display:flex;align-items:center;gap:6px;height:40px;padding:0 12px 0 14px;border-radius:999px;border:1px solid var(--border);background:#fff;max-width:150px}
+.home-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 calc(22px * var(--k));position:relative;z-index:5}
+.hello{font:700 26px/1.3 var(--serif);margin:0;white-space:nowrap}
+.picker{position:relative;flex:0 1 auto;min-width:0}
+.pill{display:flex;align-items:center;gap:6px;height:40px;padding:0 12px 0 14px;border-radius:999px;border:1px solid var(--border);background:#fff;max-width:150px;min-width:0}
 .pill:active{background:var(--press)}
 .pill-name{font:600 15px var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .caret{font-size:11px;color:var(--mute)}
@@ -51,9 +52,11 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .menu-foot button:last-child{color:var(--sub)}
 
 .shelf-wrap{position:relative;margin:0 -22px}
-.shelf{display:flex;align-items:flex-end;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px calc(50% - 115px) 0;height:368px;scrollbar-width:none;position:relative;z-index:1}
+.shelf{display:flex;align-items:flex-end;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px calc(50% - 115px * var(--k)) 0;height:calc(300px * var(--k) + 24px);scrollbar-width:none;position:relative;z-index:1}
 .shelf::-webkit-scrollbar{display:none}
-.slot{flex:none;width:230px;display:flex;justify-content:center;scroll-snap-align:center;cursor:pointer}
+.slot{flex:none;width:calc(230px * var(--k));height:calc(300px * var(--k));position:relative;scroll-snap-align:center;cursor:pointer}
+/* 屏幕矮时（比如微信里）整本书等比缩小，保证按钮在一屏内 */
+.fit{position:absolute;left:50%;bottom:0;width:210px;height:300px;margin-left:-105px;transform-origin:bottom center;transform:scale(var(--k))}
 .book{width:210px;height:300px;transform-origin:bottom center;transition:transform .3s,opacity .3s;position:relative;border-radius:4px 12px 12px 4px;background:var(--cover);
   box-shadow:inset 14px 0 0 rgba(0,0,0,.14),inset 16px 0 0 rgba(255,255,255,.18),5px 0 0 -1px #F4F0E8,6px 0 0 -1px #D6D0C4,12px 14px 22px rgba(0,0,0,.22);
   padding:18px 18px 20px 30px;display:flex;flex-direction:column;color:#fff}
@@ -249,7 +252,7 @@ const TOOLS = {
 };
 // 书架顺序：进组前 → 拍戏期 → 宣传期 → 个人表达
 const ORDER = ['job', 'bio', 'line', 'press', 'web'];
-const SLOT = 230;
+let K = 1, SLOT = 230;
 const QUIZ = [
   { q: '周末你更想……', f: '周末突然多出一天假，你第一反应？', o: ['在家看书', '约朋友出门', '一个人去旅行'] },
   { q: '遇到难题，你会……', f: '老板临时甩来一个大难题，你……', o: ['先自己想办法', '找人商量', '睡一觉再说'] },
@@ -432,7 +435,7 @@ function readPoster(file, cb) {
 function bookView(id, i, d) {
   const t = TOOLS[id], on = i === S.card;
   return `<div class="slot" data-act="card" data-i="${i}">
-    <div class="book c-${id}" style="transform:scale(${on ? 1 : .84});opacity:${on ? 1 : .7}">
+    <div class="fit"><div class="book c-${id}" style="transform:scale(${on ? 1 : .84});opacity:${on ? 1 : .7}">
       <div class="book-art">
         ${d.poster ? `<div class="poster" style="background-image:url('${esc(d.poster)}');background-position:${esc(d.pos || 'center 25%')}"></div>` : ''}
         <div class="shade"></div>
@@ -444,7 +447,7 @@ function bookView(id, i, d) {
         <span class="book-name">${esc(t.name)}</span>
         <span class="book-drama">《${esc(d.name)}》· ${esc(d.role)}</span>
       </div>
-    </div>
+    </div></div>
   </div>`;
 }
 function activeView() {
@@ -591,12 +594,26 @@ function sheetView() {
     </div>`;
 }
 function scrollDown() { const el = $('[data-scroll]'); if (el) el.scrollTop = el.scrollHeight; }
+// 首页一屏放不下时，按差多少把书架缩小（最小 0.6 倍）
+function fitShelf() {
+  const page = S.screen === 'home' && $('.page');
+  if (!page) return;
+  for (let n = 0; n < 3; n++) {
+    const over = page.scrollHeight - page.clientHeight;
+    const k = Math.max(.6, Math.min(1, K - over / 322));
+    if (Math.abs(k - K) < .005) break;
+    K = k; SLOT = 230 * K;
+    $('#app').style.setProperty('--k', K);
+  }
+}
+window.addEventListener('resize', () => { if (S.screen === 'home') { K = 1; $('#app').style.setProperty('--k', 1); SLOT = 230; render(); } });
 function render() {
   let h = '';
   if (S.screen === 'tool') h = toolView();
   else h = (S.screen === 'saved' ? savedView() : S.screen === 'phrases' ? phrasesView() : homeView()) + tabsView();
   if (S.sheet) h += sheetView();
   $('#view').innerHTML = h;
+  fitShelf();
   const shelf = $('.shelf');
   if (shelf) { shelf.scrollLeft = S.card * SLOT; shelf.addEventListener('scroll', onSwipe, { passive: true }); }
   const mic = $('[data-mic]');
