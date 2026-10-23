@@ -95,6 +95,20 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .si-title{font-size:18px;font-weight:600}
 .si-meta{font-size:14px;color:var(--mute)}
 .chev{color:var(--faint);font-size:20px}
+.title-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.gear{display:flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:15px;flex:none}
+.gear:active{background:var(--press)}
+.gear i{width:8px;height:8px;border-radius:9px}
+.status{font-size:15px;line-height:1.5;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid var(--line)}
+.status.ok{color:#2F6B45;border-color:#BFD9C8;background:#F1F8F3}
+.status.err{color:var(--accent);border-color:#EBC9C0;background:#FBF1EE}
+.status.busy{color:var(--sub)}
+.say{flex:1;min-width:0;height:60px;border-radius:16px;border:1.5px solid var(--border);background:#fff;padding:0 14px;font:500 17px var(--sans);color:var(--ink);outline:none}
+.say:focus{border-color:var(--ink)}
+.say:disabled{background:var(--press);color:var(--mute)}
+.send{width:76px;height:60px;flex:none;border-radius:16px;background:var(--ink);color:var(--paper);font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.send:disabled{background:#E4E0D8;color:var(--mute)}
+.webiframe{display:block;width:100%;height:520px;border:0;background:#fff}
 .empty{font-size:16px;color:var(--mute);line-height:1.6;padding:24px 0;text-align:center}
 .phrase{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px}
 .phrase-l{font-size:14px;color:var(--accent);font-weight:600}
@@ -294,24 +308,26 @@ const S = {
   saved: store.get('saved', [{ tool: 'job', title: '职业功课卡 · 律师', ts: Date.now() - 864e5 }]),
   card: 0, menu: false, sheet: null, draft: { name: '', role: '', job: '' },
   dramas: store.get('dramas', DEFAULT_DRAMAS), dramaIdx: store.get('dramaIdx', 0),
-  savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: ''
+  savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: '',
+  ai: false, aiCard: null, webHtml: null, thinkText: '', arkDraft: null, arkStatus: null
 };
 if (!Array.isArray(S.dramas) || !S.dramas.length) S.dramas = DEFAULT_DRAMAS.slice();
 if (!(S.dramaIdx >= 0 && S.dramaIdx < S.dramas.length)) S.dramaIdx = 0;
 
-let timers = [], iv = 0, toastT = 0;
+let timers = [], iv = 0, toastT = 0, gen = 0, ctl = null;
 const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-function clear() { timers.forEach(clearTimeout); timers = []; clearInterval(iv); }
+// gen 每次离开 / 重来都 +1，旧的 AI 回复回来时直接丢掉
+function clear() { timers.forEach(clearTimeout); timers = []; clearInterval(iv); gen++; if (ctl) { try { ctl.abort(); } catch (e) {} ctl = null; } }
 function set(patch) { Object.assign(S, patch); render(); }
 function persistDramas() {
   const ok = store.set('dramas', S.dramas);
   store.set('dramaIdx', S.dramaIdx);
   return ok;
 }
-function flash(msg) {
+function flash(msg, ms) {
   const el = $('#toast');
   clearTimeout(toastT); el.textContent = msg; el.hidden = false;
-  toastT = setTimeout(() => { el.hidden = true; }, 1600);
+  toastT = setTimeout(() => { el.hidden = true; }, ms || 1600);
 }
 const drama = () => S.dramas[S.dramaIdx] || S.dramas[0];
 // 换戏后，把示例里的剧名 / 角色 / 职业换成当前这部戏的
@@ -329,7 +345,142 @@ function when(ts) {
   return (d.getMonth() + 1) + '月' + d.getDate() + '日';
 }
 
-// ── 对话流程（演示脚本） ──
+// ── AI：浏览器直接调用火山方舟（豆包）。密钥只存在这台手机里，不写进代码 ──
+const ARK_BASE = 'https://ark.cn-beijing.volces.com/api/v3';
+const ARK_MODEL = 'doubao-seed-2-1-pro-260915';
+const RULES = '规则：用简体中文；不评价她的表演，不打分；不提外貌、身材、年龄；不编造她的经历、剧情或她没说过的话。';
+let ARK = store.get('ark', null);
+const aiOn = () => !!(ARK && ARK.key);
+async function ask({ system, messages, onText, maxTokens = 1200 }) {
+  ctl = new AbortController();
+  const r = await fetch((ARK.base || ARK_BASE).replace(/\/$/, '') + '/chat/completions', {
+    method: 'POST', signal: ctl.signal,
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + ARK.key },
+    // 关掉深度思考，不然要等很久才出第一个字
+    body: JSON.stringify({ model: ARK.model || ARK_MODEL, messages: [{ role: 'system', content: system }, ...messages],
+      stream: true, max_tokens: maxTokens, thinking: { type: 'disabled' } })
+  });
+  if (!r.ok || !r.body) {
+    let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch (e) {}
+    throw { status: r.status, msg };
+  }
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = '', text = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      const t = line.trim(); if (!t.startsWith('data:')) continue;
+      const p = t.slice(5).trim(); if (p === '[DONE]') continue;
+      try { const d = JSON.parse(p).choices[0].delta.content; if (d) { text += d; onText && onText(text); } } catch (e) {}
+    }
+  }
+  if (!text.trim()) throw { code: 'empty' };
+  return text;
+}
+function why(e) {
+  if (e && e.name === 'AbortError') return '';
+  if (e && e.status === 401) return '密钥不对或已失效';
+  if (e && e.status === 404) return '模型 ID 不对，或这个账号没开通这个模型';
+  if (e && e.status === 429) return '调用太频繁或额度用完了';
+  if (e && e.status) return '火山方舟返回了错误（' + e.status + (e.msg ? '：' + e.msg.slice(0, 60) : '') + '）';
+  if (e && e.code === 'empty') return 'AI 没有返回内容';
+  if (e && e.code === 'json') return 'AI 返回的格式不对';
+  return '连不上火山方舟（可能是网络，或火山方舟不允许网页直接调用）';
+}
+function parseJSON(text) {
+  try { return JSON.parse(text); } catch (e) {}
+  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/); if (m) { try { return JSON.parse(m[1]); } catch (e) {} }
+  const a = text.indexOf('{'), b = text.lastIndexOf('}');
+  if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch (e) {} }
+  throw { code: 'json' };
+}
+// 每本书对 AI 的要求
+function sysFor(id) {
+  const d = drama(), n = S.msgs.filter(m => m.role === 'a').length + 1;
+  const who = '演员李一桐，她要在《' + d.name + '》里演' + d.role + '（职业：' + d.job + '）';
+  return {
+    job: '你在扮演一位做了很多年的' + d.job + '。对面是' + who + '，来找你了解这一行。' + (n === 1 ? '先用一两句话自我介绍，问她想了解什么。' : '') +
+      '像真人聊天一样口语化回答，每次最多三句话，讲具体的小细节或小习惯。不要用列表和 markdown。' + RULES,
+    bio: '你是表演老师，在帮' + who + '写人物小传。现在问第 ' + n + ' 题。只输出问题本身，以“第 ' + n + ' 题：”开头，不超过 30 个字；从具体的生活细节问起，不要重复问过的方向。' + RULES,
+    press: '你扮演一位娱乐记者，在《' + d.name + '》发布会上采访' + who + '。现在问第 ' + n + ' 题。只输出问题本身，以“第 ' + n + ' 题：”开头，不超过 40 个字；像真实记者，礼貌，不问外貌、身材、年龄和私生活。' + RULES,
+    line: '你是古装剧的台词老师，' + who + '。她发来一句台词（可能是图片）。用一两句话口语化地回应，点出这句的关键词，告诉她你会分成几张卡讲。不要列表和 markdown。' + RULES
+  }[id];
+}
+const CARD_ASK = {
+  job: () => '请把上面的聊天整理成一张给演员看的' + drama().job + '职业功课卡。sections 固定三项：“常用说法”“习惯动作”“一天怎么过”，每项 2-3 条，每条一句话。tag 写职业名。可以补充这个职业的常识，不要编剧情。',
+  bio: () => '请根据她的回答整理人物小传。只用她回答里的内容，可以把散的话连成通顺的句子，不要添加新情节。sections 固定四项：“成长经历”“想要什么”“怕什么”“和别人的关系”，没说到的写“还没回答”。tag 写角色名。',
+  press: () => '请把她的回答整理成采访要点。每个问题一个 section，t 写问题的简短概括，items 是 2-3 个要点，每条不超过 25 字，只用她说过的意思，不评价好坏。tag 写“《' + drama().name + '》发布会”。',
+  line: () => '请解释她发来的这句台词。sections 依次是：“白话意思”“典故出处”“这时候怎么做”，有容易读错的字再加一项“读音提醒”（写“字 拼音”）。每项 1-2 条，口语化。典故不确定就写“没有明确出处”，不要编。tag 写这句里最关键的词。'
+};
+function history() {
+  const h = S.msgs.filter(m => m.text).map(m => {
+    if (m.role === 'a') return { role: 'assistant', content: m.text };
+    if (m.img) return { role: 'user', content: [{ type: 'text', text: '请看图片里的这句台词。' }, { type: 'image_url', image_url: { url: m.img } }] };
+    return { role: 'user', content: m.text };
+  });
+  if (!h.length || h[0].role !== 'user') h.unshift({ role: 'user', content: '开始吧。' });
+  return h;
+}
+function aiFailed(e) { const w = why(e); if (w) flash('AI 出错：' + w + '，先用示例', 2600); }
+// AI 说一句（流式）；出错就换成示例里那句
+async function aiSay(fallback, next) {
+  const tok = gen;
+  S.msgs.push({ role: 'a', text: '' }); render();
+  const n = S.msgs.length - 1, paint = () => { const el = document.querySelector('[data-msg="' + n + '"]'); if (el) el.textContent = S.msgs[n].text || '…'; scrollDown(); };
+  paint();
+  try {
+    const text = await ask({ system: sysFor(S.toolId), messages: history(), onText: x => { if (tok === gen) { S.msgs[n].text = x; paint(); } } });
+    if (tok !== gen) return;
+    S.msgs[n].text = text.trim();
+  } catch (e) {
+    if (tok !== gen) return;
+    S.msgs[n].text = fallback; aiFailed(e);
+  }
+  render(); later(next, 300);
+}
+async function aiCard() {
+  const tok = gen, t = T(S.toolId);
+  try {
+    const text = await ask({ maxTokens: 1500, system: CARD_ASK[S.toolId]() + '\n只回复一个 JSON 对象，格式：{"tag":"…","sections":[{"t":"…","items":["…"]}]}。' + RULES,
+      messages: [{ role: 'user', content: S.msgs.map(m => (m.role === 'a' ? 'AI：' : '她：') + (m.img ? '（发了一张台词照片）' : m.text)).join('\n') + '\n\n请整理。' }] });
+    if (tok !== gen) return;
+    const j = parseJSON(text);
+    let secs = Array.isArray(j.sections) ? j.sections : Object.entries(j).filter(([k]) => k !== 'tag').map(([k, v]) => ({ t: k, items: v }));
+    secs = secs.map(x => ({ t: String(x.t || ''), items: (Array.isArray(x.items) ? x.items : [x.items]).filter(Boolean).map(String) })).filter(x => x.t && x.items.length);
+    if (!secs.length) throw { code: 'json' };
+    S.aiCard = { title: t.card.title, tag: String(j.tag || t.card.tag), note: t.card.note, sections: secs };
+  } catch (e) {
+    if (tok !== gen) return;
+    S.aiCard = null; aiFailed(e);
+  }
+  set({ stage: 'result' });
+}
+// 一句话做网页：让 AI 写一个单文件网页
+const extractHTML = t => { const m = t.match(/```html\s*([\s\S]*?)(```|$)/i); if (m) return m[1]; const i = t.search(/<!doctype|<html/i); return i >= 0 ? t.slice(i) : t; };
+async function aiWeb(need) {
+  const tok = gen, prev = S.webHtml, d = drama();
+  set({ stage: 'thinking', waiting: false, thinkText: prev ? '正在按你说的改…' : 'AI 正在做网页…' });
+  const head = '你是很会做手机网页的设计师。请做一个完整、能直接运行的单文件 HTML 页面。\n要求：只用内联 CSS 和 JS，不引用任何外部资源；手机竖屏优先，简体中文，字号大，按钮好点；风格简洁有质感。\n页面主人是演员李一桐（本名李雪），这是她给粉丝的小互动。她演过的角色可以用：余梦（《美人余》）、孟钰（《狂飙》）、' + d.role + '（《' + d.name + '》）。不要编造剧情。\n只输出代码，放在一个 ```html 代码块里，前后不要写解释。' + RULES;
+  try {
+    const text = await ask({ maxTokens: 8000, system: head,
+      messages: [{ role: 'user', content: prev ? '这是当前页面的完整代码：\n```html\n' + prev + '\n```\n\n请按这条意见改好，输出改完后的完整代码：' + need : '需求：' + need }],
+      onText: x => { if (tok !== gen) return; const el = $('.thinking span:last-child'); if (el) el.textContent = (prev ? '正在改' : '正在写网页') + '… 已写 ' + extractHTML(x).split('\n').length + ' 行'; } });
+    if (tok !== gen) return;
+    const html = extractHTML(text);
+    if (!/<\/html>|<\/body>|<\/script>|<\/div>/i.test(html)) throw { code: 'empty' };
+    if (!prev) S.msgs.push({ role: 'a', text: '做好了，可以点着试试。想改哪里，在下面直接说。' });
+    set({ webHtml: html, stage: 'result', webLog: prev ? '你说：“' + need + '”，已经改好了。' : '' });
+  } catch (e) {
+    if (tok !== gen) return;
+    aiFailed(e);
+    set({ stage: 'result', webLog: prev ? '没改成，还是上一版。' : '' });
+  }
+}
+
+// ── 对话流程：有密钥就问豆包，没有就走演示脚本 ──
 function stream(role, text, done) {
   S.msgs.push({ role, text: '' }); render();
   let i = 0; clearInterval(iv);
@@ -344,33 +495,37 @@ function stream(role, text, done) {
   }, 38);
 }
 function run() {
-  const t = T(S.toolId), i = S.step;
+  const t = T(S.toolId), i = S.step, ai = S.ai;
   if (i >= t.script.length) {
-    set({ stage: 'thinking', waiting: false });
+    if (ai && t.kind === 'web') return aiWeb((S.msgs.find(m => m.role === 'u') || {}).text || t.example);
+    set({ stage: 'thinking', waiting: false, thinkText: '正在整理成卡片' });
+    if (ai) return aiCard();
     later(() => set({ stage: 'result' }), t.kind === 'web' ? 1500 : 1100);
     return;
   }
   const st = t.script[i];
   const next = () => { S.step = i + 1; run(); };
-  if (st.a) stream('a', st.a, next);
+  if (st.a && ai && t.kind === 'web') next();
+  else if (st.a) { if (ai) aiSay(st.a, next); else stream('a', st.a, next); }
   else if (S.mode === 'auto') later(() => stream('u', st.u, next), 650);
   else set({ waiting: true });
 }
-function userSay(text) {
+function userSay(text, img) {
   if (!S.waiting) return;
   const t = T(S.toolId), i = S.step;
   S.waiting = false;
-  stream('u', text || t.script[i].u, () => { S.step = i + 1; run(); });
+  stream('u', text || t.script[i].u, () => { if (img) S.msgs[S.msgs.length - 1].img = img; S.step = i + 1; run(); });
 }
 function start(mode) {
   clear();
-  Object.assign(S, { mode, stage: 'session', msgs: [], step: 0, waiting: false, savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: '' });
+  Object.assign(S, { mode, stage: 'session', msgs: [], step: 0, waiting: false, savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: '',
+    ai: aiOn(), aiCard: null, webHtml: null });
   run();
 }
-function openTool(id, stage, fromHistory) {
+function openTool(id, stage, fromHistory, card) {
   clear();
   set({ screen: 'tool', from: S.screen === 'tool' ? S.from : S.screen, toolId: id, stage: stage || 'intro', mode: 'auto', msgs: [], step: 0, waiting: false,
-    recording: false, menu: false, savedNow: !!stage, webQ: 0, webScore: 0, mods: [], webLog: '' });
+    recording: false, menu: false, savedNow: !!stage, webQ: 0, webScore: 0, mods: [], webLog: '', ai: aiOn(), aiCard: card || null, webHtml: null });
   if (!fromHistory) try { history.pushState({ tool: id }, '', '#' + id); } catch (e) {}
 }
 function closeTool() { clear(); set({ screen: S.from || 'home', recording: false }); }
@@ -380,9 +535,16 @@ function back() {
   closeTool();
 }
 function applyMod(label) {
-  const m = label || MODS.find(x => !S.mods.includes(x)); if (!m) return;
+  if (S.ai && S.webHtml) {
+    if (!label) return;
+    S.mods = [...S.mods, label]; S.msgs.push({ role: 'u', text: label });
+    return aiWeb(label);
+  }
+  const m = label || MODS.find(x => !S.mods.includes(x)); if (!m || !MODS.includes(m)) return;
   set({ mods: [...S.mods, m], webLog: '你说：“' + m + '”，已经改好了。' });
 }
+// 接了 AI 且需要她自己说的时候，底栏换成输入框（可以用键盘上的麦克风说）
+const typing = () => S.ai && ((S.stage === 'session' && S.mode === 'self') || (S.stage === 'result' && !!S.webHtml));
 const canTalk = () => (S.stage === 'session' && S.waiting) || (S.stage === 'result' && T(S.toolId).kind === 'web' && S.mods.length < MODS.length);
 function micDown(e) { if (!canTalk()) return; e.preventDefault(); set({ recording: true }); }
 function micUp() {
@@ -390,20 +552,64 @@ function micUp() {
   set({ recording: false });
   if (S.stage === 'result') applyMod(); else userSay();
 }
+function sendTyped() {
+  const box = $('.say'), v = box ? box.value.trim() : '';
+  if (!v) return flash('先说点什么');
+  if (S.stage === 'result') { box.value = ''; return applyMod(v); }
+  if (!S.waiting) return;
+  box.value = ''; userSay(v);
+}
 function secondary() {
   const t = T(S.toolId);
   if (!S.waiting) return;
   if (S.toolId === 'line') userSay('📷 拍了一句：' + t.example);
   else if (S.toolId === 'bio') userSay('（这题先跳过）');
-  else if (S.toolId === 'press') { set({ waiting: false }); stream('a', '换个问法：' + t.script[S.step - 1].a.replace(/^第 \d 题：/, ''), () => set({ waiting: true })); }
+  else if (S.toolId === 'press') {
+    const q = (S.msgs.filter(m => m.role === 'a').pop() || {}).text || t.script[S.step - 1].a;
+    set({ waiting: false }); stream('a', '换个问法：' + q.replace(/^第 \d+ 题：/, ''), () => set({ waiting: true }));
+  }
+}
+// 拍台词：缩小后发给豆包看
+function shrinkImage(file, max, cb) {
+  const r = new FileReader();
+  r.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height)), w = Math.round(img.width * k), h = Math.round(img.height * k);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      let url; try { url = c.toDataURL('image/jpeg', .82); } catch (e) { url = r.result; }
+      cb(url);
+    };
+    img.onerror = () => cb(r.result);
+    img.src = r.result;
+  };
+  r.readAsDataURL(file);
 }
 function save() {
   if (S.savedNow) return;
-  const t = T(S.toolId);
-  S.saved = [...S.saved, { tool: S.toolId, title: t.card ? t.card.title + ' · ' + t.card.tag : '粉丝测试页', ts: Date.now() }].slice(-50);
+  const c = S.aiCard || T(S.toolId).card;
+  S.saved = [...S.saved, { tool: S.toolId, title: c ? c.title + ' · ' + c.tag : '粉丝测试页', ts: Date.now(), card: S.aiCard || undefined }].slice(-50);
   store.set('saved', S.saved);
   set({ savedNow: true });
   flash('已存进“我的收藏”');
+}
+// 设置：保存密钥并测试
+async function testArk() {
+  const d = S.arkDraft, key = d.key.trim();
+  if (!key) return flash('先填 API Key');
+  ARK = { key, model: d.model.trim() || ARK_MODEL, base: (d.base.trim() || ARK_BASE).replace(/\/$/, '') };
+  store.set('ark', ARK);
+  set({ arkStatus: { kind: 'busy', text: '正在测试连接…' } });
+  const tok = gen;
+  try {
+    const t0 = Date.now();
+    const text = await ask({ system: '你是测试助手。', messages: [{ role: 'user', content: '请只回复：连接成功' }], maxTokens: 20 });
+    S.arkStatus = { kind: 'ok', text: '连接成功，用时 ' + ((Date.now() - t0) / 1000).toFixed(1) + ' 秒。AI 回复：' + text.trim().slice(0, 30) };
+  } catch (e) {
+    S.arkStatus = { kind: 'err', text: '连接失败：' + (why(e) || '已取消') + '。密钥已保存，可以改好再试。' };
+  }
+  if (S.sheet === 'settings') render();
 }
 function copyText(text) {
   const fallback = () => {
@@ -483,9 +689,10 @@ function homeView() {
 function savedView() {
   const items = S.saved.slice().reverse();
   return `<div class="page">
-    <h1 class="title">我的收藏</h1>
-    <div class="lead">只存在这台手机里</div>
-    <div class="list">${items.length ? items.map(x => `<button class="saved-item" data-act="openSaved" data-tool="${esc(x.tool)}">
+    <div class="title-row"><h1 class="title">我的收藏</h1>
+      <button class="gear" data-act="settings"><i style="background:${aiOn() ? '#3E8E5A' : '#C9C4BA'}"></i>设置</button></div>
+    <div class="lead">只存在这台手机里 · ${aiOn() ? 'AI 已连接豆包' : '还没连 AI，现在是演示'}</div>
+    <div class="list">${items.length ? items.map(x => `<button class="saved-item" data-act="openSaved" data-i="${S.saved.indexOf(x)}">
         <span class="glyph-solid">${esc(TOOLS[x.tool].glyph)}</span>
         <span class="si-text"><span class="si-title">${esc(x.title)}</span><span class="si-meta">${esc(TOOLS[x.tool].name)} · ${when(x.ts)}</span></span>
         <span class="chev">›</span></button>`).join('') : '<div class="empty">还没有收藏。结果出来后点“收藏”，就会存在这里。</div>'}</div>
@@ -507,6 +714,12 @@ function tabsView() {
     `<button class="tab${S.screen === k ? ' on' : ''}" data-act="tab" data-k="${k}"><span>${l}</span><i></i></button>`).join('')}</nav>`;
 }
 function webView() {
+  if (S.webHtml) return `<div class="webwrap">
+    <div class="webframe"><div class="web-h"><span>AI 做的网页 · 只在这里能看到</span><span>豆包</span></div>
+      <iframe class="webiframe" sandbox="allow-scripts" title="AI 做的网页" srcdoc="${esc(S.webHtml)}"></iframe></div>
+    <span class="web-log">${esc(S.webLog || '点着试玩，或者在下面说怎么改：')}</span>
+    <div class="mods">${MODS.filter(m => !S.mods.includes(m)).map(m => `<button class="mod" data-act="mod" data-m="${esc(m)}">“${esc(m)}”</button>`).join('')}</div>
+  </div>`;
   const fun = S.mods.includes('题目再有趣一点'), blue = S.mods.includes('改成淡蓝色');
   const bg = blue ? '#E6EFF8' : '#F2EFE9', accent = blue ? '#2F6FB0' : '#B8432B', ink = blue ? '#14304D' : '#1D1C1A';
   const q = QUIZ[Math.min(S.webQ, 4)], role = ROLES[S.webScore % 3];
@@ -533,7 +746,7 @@ function toolView() {
   const msgs = S.msgs.map((m, i) => m.role === 'a'
     ? `<div class="msg-ai"><span class="who">${esc(who)}</span><span class="txt" data-msg="${i}">${esc(m.text)}</span></div>`
     : `<div class="msg-user" data-msg="${i}">${esc(m.text)}</div>`).join('');
-  const card = t.card || { sections: [] };
+  const card = S.aiCard || t.card || { sections: [] };
   let label = '按住 说话';
   if (S.recording) label = '松开 发送';
   else if (S.stage === 'intro') label = '先选上面一种方式';
@@ -542,10 +755,19 @@ function toolView() {
   else if (S.stage === 'session' && S.waiting) label = '按住 说话回答';
   else if (S.stage === 'result' && isWeb) label = talk ? '按住 说要怎么改' : '都改好了';
   const result = S.stage === 'result';
-  const bar = result && !isWeb
+  const sec = !t.secondary || result ? ''
+    : S.ai && S.toolId === 'line' && S.mode === 'self'
+      ? `<label class="sec-btn" style="opacity:${S.waiting ? 1 : .4}">${esc(t.secondary)}<input type="file" accept="image/*" capture="environment" data-photo hidden${S.waiting ? '' : ' disabled'}></label>`
+      : `<button class="sec-btn" data-act="secondary" style="opacity:${S.waiting ? 1 : .4}">${esc(t.secondary)}</button>`;
+  const typeRow = () => {
+    const ready = S.stage === 'result' || S.waiting;
+    const ph = S.stage === 'result' ? '说要怎么改，比如“换成粉色”' : S.waiting ? (S.toolId === 'line' ? '打一句台词，或点左边拍照' : '打字，或用键盘上的麦克风说') : 'AI 在说…';
+    return `<div class="row">${sec}<input class="say" enterkeyhint="send" placeholder="${ph}"${ready ? '' : ' disabled'}><button class="send" data-act="send"${ready ? '' : ' disabled'}>发送</button></div>`;
+  };
+  const bar = typing() && S.stage !== 'thinking' ? typeRow() : result && !isWeb
     ? `<div class="row"><button class="bb outline" data-act="restart">再来一次</button><button class="bb solid" data-act="save">${S.savedNow ? '已收藏' : '收藏'}</button></div>`
     : `<div class="row">
-        ${t.secondary && !result ? `<button class="sec-btn" data-act="secondary" style="opacity:${S.waiting ? 1 : .4}">${esc(t.secondary)}</button>` : ''}
+        ${sec}
         <div class="mic" data-mic style="background:${S.recording ? '#B8432B' : talk ? '#1D1C1A' : '#E4E0D8'};color:${talk || S.recording ? '#F5F3EE' : '#8A867E'}">
           ${S.recording ? '<span class="pulse"></span>' : ''}<span class="mic-dot" style="background:${S.recording ? '#fff' : talk ? '#B8432B' : '#B5B0A6'}"></span><span>${label}</span>
         </div>
@@ -559,7 +781,7 @@ function toolView() {
         <div class="btns"><button class="btn solid" data-act="auto">直接试试</button><button class="btn outline" data-act="self">换我来说</button></div>
       </div>` : ''}
       ${msgs}
-      ${S.stage === 'thinking' ? '<div class="thinking"><span class="tdots"><i></i><i></i><i></i></span><span>正在整理成卡片</span></div>' : ''}
+      ${S.stage === 'thinking' ? `<div class="thinking"><span class="tdots"><i></i><i></i><i></i></span><span>${esc(S.thinkText || '正在整理成卡片')}</span></div>` : ''}
       ${result && !isWeb ? `<div class="card">
         <div class="card-h"><span class="card-t">${esc(card.title)}</span><span class="card-tag">${esc(card.tag)}</span></div>
         <div class="card-b">${card.sections.map(sec => `<div class="sec"><span class="sec-t">${esc(sec.t)}</span>
@@ -572,7 +794,17 @@ function toolView() {
 }
 function sheetView() {
   const ok = S.draft.name.trim() && S.draft.role.trim();
-  const body = S.sheet === 'add'
+  const st = S.arkStatus;
+  const body = S.sheet === 'settings'
+    ? `<div class="form">
+        <span class="hint">填一次火山方舟的 API Key，五本书就会用豆包真的回答你。密钥只存在这台手机的浏览器里，不会写进网站。已关掉深度思考，回答更快。</span>
+        ${[['key', 'API Key', 'ark-…', 'password'], ['model', '模型 ID 或接入点 ID', ARK_MODEL, 'text'], ['base', '接口地址（一般不用改）', ARK_BASE, 'text']].map(([k, l, ph, type]) =>
+          `<label class="field"><span>${l}</span><input data-ark="${k}" type="${type}" value="${esc(S.arkDraft[k])}" placeholder="${ph}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>`).join('')}
+        ${st ? `<div class="status ${st.kind}">${esc(st.text)}</div>` : ''}
+        <button class="btn solid" data-act="arkSave">${st && st.kind === 'busy' ? '正在测试…' : '保存并测试'}</button>
+        ${aiOn() ? '<button class="btn outline" data-act="arkClear">清除密钥，回到演示</button>' : ''}
+      </div>`
+    : S.sheet === 'add'
     ? `<div class="form">
         ${[['name', '剧名', '例如：书卷一梦'], ['role', '我演的角色', '例如：江飞燕'], ['job', '角色的职业', '例如：戏班花旦']].map(([k, l, ph]) =>
           `<label class="field"><span>${l}</span><input data-field="${k}" value="${esc(S.draft[k])}" placeholder="${ph}"></label>`).join('')}
@@ -589,7 +821,7 @@ function sheetView() {
   return `<div class="scrim" data-act="close"></div>
     <div class="sheet">
       <span class="grab"></span>
-      <div class="sheet-h"><span class="sheet-t">${S.sheet === 'add' ? '新增一部戏' : '管理我的戏'}</span><button class="sheet-x" data-act="close">关闭</button></div>
+      <div class="sheet-h"><span class="sheet-t">${S.sheet === 'settings' ? '连接豆包' : S.sheet === 'add' ? '新增一部戏' : '管理我的戏'}</span><button class="sheet-x" data-act="close">关闭</button></div>
       ${body}
     </div>`;
 }
@@ -612,7 +844,9 @@ function render() {
   if (S.screen === 'tool') h = toolView();
   else h = (S.screen === 'saved' ? savedView() : S.screen === 'phrases' ? phrasesView() : homeView()) + tabsView();
   if (S.sheet) h += sheetView();
+  const say = $('.say'), typed = say ? say.value : '';
   $('#view').innerHTML = h;
+  const say2 = $('.say'); if (say2 && typed) say2.value = typed;
   fitShelf();
   const shelf = $('.shelf');
   if (shelf) { shelf.scrollLeft = S.card * SLOT; shelf.addEventListener('scroll', onSwipe, { passive: true }); }
@@ -644,7 +878,11 @@ const ACT = {
   card: el => { const i = +el.dataset.i; if (i === S.card) openTool(ORDER[i]); else $('.shelf').scrollTo({ left: i * SLOT, behavior: 'smooth' }); },
   open: el => openTool(el.dataset.id),
   tab: el => set({ screen: el.dataset.k }),
-  openSaved: el => { if (TOOLS[el.dataset.tool]) openTool(el.dataset.tool, 'result'); },
+  openSaved: el => { const x = S.saved[+el.dataset.i]; if (x && TOOLS[x.tool]) openTool(x.tool, 'result', false, x.card); },
+  settings: () => set({ sheet: 'settings', arkStatus: null, arkDraft: { key: (ARK && ARK.key) || '', model: (ARK && ARK.model) || ARK_MODEL, base: (ARK && ARK.base) || ARK_BASE } }),
+  arkSave: () => { if (!S.arkStatus || S.arkStatus.kind !== 'busy') testArk(); },
+  arkClear: () => { ARK = null; store.set('ark', null); S.arkDraft.key = ''; set({ arkStatus: { kind: 'err', text: '已清除，现在是演示模式。' } }); },
+  send: () => sendTyped(),
   copy: el => copyText(PHRASES[+el.dataset.i].text),
   back, secondary, save,
   auto: () => start('auto'),
@@ -674,13 +912,19 @@ app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (el && ACT[el.dataset.act]) ACT[el.dataset.act](el);
 });
+app.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.classList.contains('say') && !e.isComposing) { e.preventDefault(); sendTyped(); } });
 app.addEventListener('input', e => {
+  if (e.target.dataset.ark) { S.arkDraft[e.target.dataset.ark] = e.target.value; return; }
   const k = e.target.dataset.field; if (!k) return;
   S.draft[k] = e.target.value;
   const btn = $('.save-drama');
   if (btn) btn.style.background = S.draft.name.trim() && S.draft.role.trim() ? '#1D1C1A' : '#C9C4BA';
 });
 app.addEventListener('change', e => {
+  if (e.target.hasAttribute('data-photo')) {
+    const f = e.target.files && e.target.files[0]; if (!f || !S.waiting) return;
+    return shrinkImage(f, 1280, url => userSay('📷 拍了一句台词', url));
+  }
   const i = e.target.dataset.upload; if (i == null) return;
   const f = e.target.files && e.target.files[0]; if (!f) return;
   readPoster(f, url => {
