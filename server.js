@@ -24,8 +24,11 @@ const ARK_API_KEY = process.env.ARK_API_KEY || "";
 const ARK_BASE_URL = (process.env.ARK_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3").replace(/\/$/, "");
 const ARK_MODEL = process.env.ARK_MODEL || "doubao-seed-2-1-pro-260915";
 const ACCESS_CODE = process.env.ACCESS_CODE || "";
+// Seed 系列默认会开深度思考：流式先长时间只推 reasoning_content，页面会一直转圈。
+// 排练室场景要快，默认关掉；需要思考时在 ARK_EXTRA 里显式打开。
 let ARK_EXTRA = {};
 try { if (process.env.ARK_EXTRA) ARK_EXTRA = JSON.parse(process.env.ARK_EXTRA); } catch { console.warn("ARK_EXTRA 不是合法 JSON，已忽略"); }
+const ARK_BODY = { thinking: { type: "disabled" }, ...ARK_EXTRA };
 
 const SHELL_HEAD = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -93,7 +96,7 @@ async function chat(req, res) {
     up = await fetch(ARK_BASE_URL + "/chat/completions", {
       method: "POST", signal: ctl.signal,
       headers: { "content-type": "application/json", authorization: "Bearer " + ARK_API_KEY },
-      body: JSON.stringify({ ...ARK_EXTRA, model: ARK_MODEL, messages, stream: true, max_tokens: maxTokens }),
+      body: JSON.stringify({ ...ARK_BODY, model: ARK_MODEL, messages, stream: true, max_tokens: maxTokens }),
     });
   } catch (e) {
     if (ctl.signal.aborted) return;
@@ -143,5 +146,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`一桐的 AI 排练室：http://localhost:${PORT}`);
   console.log(ARK_API_KEY ? `AI：火山方舟 ${ARK_MODEL}` : "AI：未配置 ARK_API_KEY，网页会进入演示模式");
+  console.log(ARK_BODY.thinking && ARK_BODY.thinking.type === "disabled" ? "深度思考：已关闭（默认）" : `深度思考：${JSON.stringify(ARK_BODY.thinking || "未设置")}`);
   if (!ACCESS_CODE) console.log("提醒：没有设置 ACCESS_CODE，任何拿到链接的人都能用");
 });
