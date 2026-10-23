@@ -220,77 +220,147 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 <body>
 <div id="app"><div id="view"></div><div id="toast" class="toast" hidden></div></div>
 <script>
-// ── 内容（示例脚本，台词/问题/角色资料都需要团队核对） ──
+// ── 内容：每部戏一套示意内容（剧情只取公开简介，台词和对话都是示意，需要团队核对） ──
+// 五本书共用的部分
 const TOOLS = {
   web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '说一句想做什么，AI 当场做出来',
-    desc: '说一句想做什么，AI 当场做出一个能点着玩的网页。', get: '一个粉丝测试页，可以接着说怎么改',
-    example: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。',
-    script: [{ u: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。' }, { a: '做好了，可以点着试试。想改哪里，按住直接说。' }], kind: 'web' },
-  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '拿到台词时', short: '拍一句台词，看意思、典故和礼数',
-    desc: '拍一句看不懂的台词，看白话意思、典故，和古人这时候怎么做。', get: '三张小卡：意思 · 典故 · 礼数',
-    example: '多谢姑娘救命之恩，来日必当结草衔环以报。', secondary: '拍一句',
-    script: [{ u: '多谢姑娘救命之恩，来日必当结草衔环以报。' }, { a: '这句看懂了。“结草衔环”是报恩的老说法，我分成三张卡给你。' }],
-    card: { title: '台词速懂', tag: '结草衔环', note: '读音以台词老师为准，典故请团队核对。', sections: [
-      { t: '白话意思', items: ['谢谢你救了我的命，以后一定拼尽全力报答你。'] },
-      { t: '典故出处', items: ['结草：《左传》，魏颗没让父亲的妾殉葬，后来老人结草绊倒敌将报恩。', '衔环：杨宝救了一只黄雀，黄雀衔来白环相报。'] },
-      { t: '这时候怎么做', items: ['说话时行礼，女子福身、男子作揖。', '语气郑重，说到“来日”时可以抬眼看对方。'] }] } },
+    desc: '说一句想做什么，AI 当场做出一个能点着玩的网页。', get: '一个粉丝测试页，可以接着说怎么改', kind: 'web',
+    example: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。',
+    script: [{ u: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。' }, { a: '做好了，可以点着试试。想改哪里，按住直接说。' }] },
+  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '拿到台词时', short: '拍一句台词，看意思、潜台词和怎么演',
+    desc: '拍一句台词，看字面意思、潜台词，和这场戏可以怎么演。', get: '三张小卡：意思 · 潜台词 · 怎么演', secondary: '拍一句' },
   job: { name: '职业功课', glyph: '职', phase: '进组前', when: '进组前', short: 'AI 扮成这一行的人，和你聊十分钟',
-    desc: '选一个职业，AI 扮成这一行的人和你聊，聊完整理成功课卡。', get: '一张职业功课卡：说法 · 动作 · 一天',
-    example: '律师 ·《美人余》余梦',
-    script: [{ a: '你好，我做了十年民商事诉讼律师。想了解这一行的什么？' }, { u: '律师平时说话有什么习惯？' },
-      { a: '先说结论，再讲理由。我们很少说“我觉得”，更常说“根据……”。跟客户说话会放慢，跟对方律师会更短。' }, { u: '那站着的时候呢？' },
-      { a: '开庭时站得很直，手放在桌面材料上，不插兜、不抱胸。翻材料很利落，像随时能找到那一页。' }],
-    card: { title: '职业功课卡', tag: '律师', note: '专业细节以剧组顾问或真实从业者为准。', sections: [
-      { t: '常用说法', items: ['“根据合同第几条……”', '“这个问题我需要先确认事实。”', '“我们的诉求有三点。”'] },
-      { t: '习惯动作', items: ['开庭时站直，手放在材料上', '翻材料快且准', '听对方说话时边听边记'] },
-      { t: '一天怎么过', items: ['早上看卷宗、回客户消息', '下午见客户或开庭', '晚上写文书，经常加班'] }] } },
+    desc: 'AI 扮成角色要打交道的那一行人和你聊，聊完整理成功课卡。', get: '一张职业功课卡：说法 · 动作 · 角色会用到的' },
   bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '进组前', short: '回答问题，得到一份人物小传',
-    desc: 'AI 一次只问一个问题，你用说话回答，最后整理成小传。', get: '一份只用你说过的话写成的小传',
-    example: '余梦 · 全职太太，后来成为律师', secondary: '跳过',
-    script: [{ a: '第 1 题：余梦小时候，家里谁对她影响最大？' }, { u: '应该是妈妈，妈妈一直跟她说女孩子要靠自己。' },
-      { a: '第 2 题：她结婚的时候，最想要的是什么？' }, { u: '一个安稳的家，她觉得那就够了。' },
-      { a: '第 3 题：她现在最怕什么？' }, { u: '怕自己再一次什么都没有。' }],
-    card: { title: '人物小传', tag: '余梦', note: '只用了你说过的话，没有替你编。还剩 5 题，可以随时接着答。', sections: [
-      { t: '成长经历', items: ['妈妈一直告诉她，女孩子要靠自己。'] },
-      { t: '想要什么', items: ['结婚时只想要一个安稳的家。'] },
-      { t: '怕什么', items: ['怕自己再一次什么都没有。'] },
-      { t: '和别人的关系', items: ['还没回答'] }] } },
-  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '去发布会的车上', short: 'AI 扮记者提问，帮你理成要点',
-    desc: 'AI 扮记者问你问题，你随便说，它帮你理成两三个要点。', get: '每个问题 2–3 个要点',
-    example: '《美人余》发布会 · 5 个问题', secondary: '再问一遍',
-    script: [{ a: '第 1 题：这次署名改成“李雪（李一桐）”，是有什么考虑吗？' }, { u: '其实李雪是我的本名，想让大家认识更完整的我，也算一个新的开始。' },
-      { a: '第 2 题：余梦从全职太太变成律师，你觉得最难演的是哪一段？' }, { u: '是她刚出去工作那段，她心里很慌，但又不能让别人看出来。' }],
-    card: { title: '采访要点', tag: '《美人余》发布会', note: '口径以宣传团队为准。不打分，只整理你说过的话。', sections: [
-      { t: '署名改为“李雪（李一桐）”', items: ['李雪是我的本名', '想让大家认识更完整的我', '一个新的开始'] },
-      { t: '余梦最难演的一段', items: ['刚出去工作的那段', '心里慌，表面要稳'] }] } }
+    desc: 'AI 围绕剧情里的关键时刻一次问一个问题，你用说话回答，最后整理成小传。', get: '一份只用你说过的话写成的小传', secondary: '跳过' },
+  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '去宣传活动的车上', short: 'AI 扮记者提问，帮你理成要点',
+    desc: 'AI 扮记者问这部戏的问题，你随便说，它帮你理成两三个要点。', get: '每个问题 2–3 个要点', secondary: '再问一遍' }
 };
-// 书架顺序：进组前 → 拍戏期 → 宣传期 → 个人表达
-const ORDER = ['job', 'bio', 'line', 'press', 'web'];
-let K = 1, SLOT = 230;
-const QUIZ = [
-  { q: '周末你更想……', f: '周末突然多出一天假，你第一反应？', o: ['在家看书', '约朋友出门', '一个人去旅行'] },
-  { q: '遇到难题，你会……', f: '老板临时甩来一个大难题，你……', o: ['先自己想办法', '找人商量', '睡一觉再说'] },
-  { q: '你更喜欢哪种衣服？', f: '明天拍定妆照，你会偷偷选……', o: ['利落的西装', '温柔的长裙', '舒服的卫衣'] },
-  { q: '朋友眼里的你是……', f: '如果朋友给你起外号，会是……', o: ['靠谱', '好玩', '安静'] },
-  { q: '你最想拥有的能力？', f: '给你一个超能力，你选……', o: ['说服别人', '让人开心', '看透人心'] }
-];
+// 每部戏的示意内容。brief 只写公开报道里的设定，也会发给豆包当背景
+const PACKS = {
+  '美人余': {
+    brief: '当代都市剧，2026 年播出，改编自伊北同名小说。李一桐饰演余梦：江浙富家独生女，结婚五周年时发现丈夫狄立人和保姆卢蕙早就设好了局，想“吃绝户”转移余家财产。余梦没有哭闹，而是找律师查流水、收聊天记录、盯房产和股权变更，从好命娇妻变成冷静反击的人。',
+    job: { example: '婚姻家事律师 · 余梦发现骗局后第一次去律所',
+      script: [{ a: '你好，我做婚姻家事律师十年了。来找我的人，第一句常常是“是不是我想多了”。你想先了解什么？' }, { u: '如果怀疑丈夫在转移财产，律师第一步会让她做什么？' },
+        { a: '先别吵，也别让他察觉。把能看到的悄悄留下来：银行流水、转账截图、聊天记录，再查房产和公司股权有没有变过名。证据比情绪有用。' }, { u: '她坐在律师对面的时候，律师会怎么跟她说话？' },
+        { a: '语速放慢，先问事实，不评价她的婚姻。会递一张纸让她把时间线写下来。她要是哭，就等她哭完，再问下一个问题。' }],
+      card: { title: '职业功课卡', tag: '婚姻家事律师', note: '专业细节以剧组顾问或真实律师为准。', sections: [
+        { t: '常用说法', items: ['“先把事实和情绪分开说。”', '“这笔钱是婚前的还是婚后的？”', '“别打草惊蛇，先把证据留好。”'] },
+        { t: '习惯动作', items: ['边听边在本子上记时间线', '说关键结论前停半拍', '把证据按日期一页页排好'] },
+        { t: '余梦会用到的', items: ['查银行流水和大额转账', '保存聊天记录和截图', '盯房产、股权有没有被悄悄变更'] }] } },
+    bio: { example: '余梦 · 结婚五周年才发现，这段婚姻是一场局',
+      script: [{ a: '第 1 题：结婚五周年那天，余梦是在哪个瞬间第一次觉得不对劲？' }, { u: '应该是保姆和狄立人对视的那一下，太熟了，不像雇主和保姆。' },
+        { a: '第 2 题：发现真相后的第一个晚上，她做了什么？' }, { u: '她没哭也没闹，一个人坐在书房，把这五年的转账记录一条条翻出来。' },
+        { a: '第 3 题：她最怕失去的是什么？' }, { u: '不是钱，是爸妈一辈子攒下的东西，还有她对自己判断的信心。' }],
+      card: { title: '人物小传', tag: '余梦', note: '只用了你说过的话，没有替你编。剧情细节以剧本为准。', sections: [
+        { t: '那一刻', items: ['五周年那天，她从保姆和狄立人的一个对视里，第一次觉得不对劲。'] },
+        { t: '她怎么做', items: ['发现真相的那晚，她没哭没闹，一个人把五年的转账记录一条条翻出来。'] },
+        { t: '她怕什么', items: ['怕的不是钱，是爸妈一辈子攒下的东西，和她对自己判断的信心。'] },
+        { t: '和狄立人的关系', items: ['还没回答'] }] } },
+    press: { example: '《美人余》宣传采访 · 5 个问题', event: '《美人余》宣传采访',
+      script: [{ a: '第 1 题：余梦从好命娇妻到冷静反击，你觉得最难演的是哪一段？' }, { u: '是她刚发现真相、还得在狄立人面前装作什么都不知道的那几场，心里翻江倒海，脸上还要笑。' },
+        { a: '第 2 题：很多观众说余梦反击时一点不哭闹，你怎么理解她的冷静？' }, { u: '我觉得她不是不难过，是知道哭没用。她把难过都收起来，变成一件一件要做的事。' }],
+      card: { title: '采访要点', tag: '《美人余》宣传', note: '口径以宣传团队为准。不打分，只整理你说过的话。', sections: [
+        { t: '最难演的一段', items: ['刚发现真相，还要装作不知道', '心里翻江倒海，脸上要笑'] },
+        { t: '余梦的冷静', items: ['不是不难过，是知道哭没用', '把难过变成一件件要做的事'] }] } },
+    line: { example: '我们结婚五年，你花的每一笔钱，我都记得。',
+      script: [{ u: '我们结婚五年，你花的每一笔钱，我都记得。' }, { a: '这句表面在算账，其实是在摊牌。我分成三张卡给你。' }],
+      card: { title: '台词速懂', tag: '摊牌', note: '这是示意台词，不是剧中原句，以剧本为准。', sections: [
+        { t: '字面意思', items: ['这五年你花的每一笔钱，我心里都有数。'] },
+        { t: '潜台词', items: ['我已经知道你在做什么了。', '不是吵架，是告诉他：你的局我看穿了。'] },
+        { t: '这时候怎么演', items: ['越平静越有力量，不用提高音量。', '说到“每一笔”时停半拍，看着他。'] }] } }
+  },
+  '我不是大师': {
+    brief: '民国悬疑剧，2026 年播出，改编自易之小说《我是个算命先生》，李现饰演上官诚明。李一桐饰演江飞燕：表面是戏班花旦，实际是骗术组织“天相派”安插的卧底，精通易容和读心。她和上官诚明大婚之夜身份被揭穿，两人从互相试探、以骗制骗，到联手瓦解天相派。',
+    job: { example: '民国戏班花旦 · 江飞燕在戏班里的那一面',
+      script: [{ a: '我在戏班唱了二十多年花旦。进了戏班，先学的不是唱，是规矩。你想先知道什么？' }, { u: '花旦平时在后台是什么样子？' },
+        { a: '上妆要好几个钟头，贴片子、勒头，勒完头疼得不想说话。后台不许乱坐衣箱，开锣前要给祖师爷上香。' }, { u: '花旦走路、看人有什么讲究？' },
+        { a: '步子小、碎、轻，身子不能晃。看人先用眼角，眼神要活，先看再笑。台下说话也带三分客气，心里的话不往外倒。' }],
+      card: { title: '职业功课卡', tag: '戏班花旦', note: '戏曲细节以剧组戏曲老师为准。', sections: [
+        { t: '后台规矩', items: ['开锣前给祖师爷上香', '不乱坐衣箱', '上妆贴片子、勒头，要好几个钟头'] },
+        { t: '习惯动作', items: ['碎步走，身子稳', '看人先用眼角，先看再笑', '手里常捏着帕子或扇子'] },
+        { t: '江飞燕会用到的', items: ['借戏班身份进出富人家', '用花旦的眼神和腔调掩住试探', '卸了妆换一张脸，是骗术师的另一面'] }] } },
+    bio: { example: '江飞燕 · 戏班花旦，也是天相派安插的卧底',
+      script: [{ a: '第 1 题：江飞燕小时候被送进天相派那天，她记住了什么？' }, { u: '她记住了娘转身走的背影，没有回头。从那天起她就学会了不哭。' },
+        { a: '第 2 题：大婚那天，她看着上官诚明的时候在想什么？' }, { u: '她想，要是我只是个唱戏的就好了。' },
+        { a: '第 3 题：她最怕什么？' }, { u: '怕自己演得太久，忘了哪张脸才是自己的。' }],
+      card: { title: '人物小传', tag: '江飞燕', note: '只用了你说过的话，没有替你编。剧情细节以剧本为准。', sections: [
+        { t: '成长经历', items: ['被送进天相派那天，她只记得娘没回头的背影，从那天起学会了不哭。'] },
+        { t: '大婚那天', items: ['她看着上官诚明，心想：要是我只是个唱戏的就好了。'] },
+        { t: '她怕什么', items: ['怕演得太久，忘了哪张脸才是自己的。'] },
+        { t: '和师门的关系', items: ['还没回答'] }] } },
+    press: { example: '《我不是大师》追剧团 · 5 个问题', event: '《我不是大师》追剧团',
+      script: [{ a: '第 1 题：江飞燕有很多张脸，你演的时候怎么分清她哪句是真、哪句是假？' }, { u: '我给她定了个规矩：骗人的时候她反而最放松，说真话的时候手会不自觉地停住。' },
+        { a: '第 2 题：这次花旦的妆一画就是好几个小时，最难的是什么？' }, { u: '勒头的时候真的很疼，但一勒上，人一下就进到那个年代里了。' }],
+      card: { title: '采访要点', tag: '《我不是大师》追剧团', note: '口径以宣传团队为准。不打分，只整理你说过的话。', sections: [
+        { t: '江飞燕的真与假', items: ['骗人时反而最放松', '说真话时手会不自觉停住'] },
+        { t: '花旦的妆', items: ['勒头很疼', '一勒上就进到那个年代'] }] } },
+    line: { example: '江湖上的局，从来不是骗人信，是让人自己愿意信。',
+      script: [{ u: '江湖上的局，从来不是骗人信，是让人自己愿意信。' }, { a: '这句像在教人做局，也像在说她自己。我分成三张卡给你。' }],
+      card: { title: '台词速懂', tag: '做局', note: '这是示意台词，不是剧中原句；民国江湖行话请团队核对。', sections: [
+        { t: '字面意思', items: ['行骗的关键不是说服别人，而是让对方自己说服自己。'] },
+        { t: '潜台词', items: ['她太懂人心，所以也最难相信别人。', '对上官诚明说，像是提醒，也像是认错。'] },
+        { t: '这时候怎么演', items: ['像在教人，又像在提醒自己，眼神带一点累。', '说到“愿意信”时放慢，嘴角似笑非笑。'] }] } }
+  }
+};
+// 自己新增的戏：没有现成内容，用通用的示意
+function genericPack(d) {
+  const r = d.role, n = d.name, j = d.job || '角色';
+  return {
+    brief: '',
+    job: { example: j + ' · ' + r + '会打交道的这一行',
+      script: [{ a: '你好，我做' + j + '很多年了。你想先了解这一行的什么？' }, { u: j + '平时说话有什么习惯？' },
+        { a: '先说结论，再讲理由；碰到外人，话会说得更短、更稳。' }, { u: '那站着、坐着的时候呢？' },
+        { a: '手上总有点事做，不乱晃。看人的时候先听完，再开口。' }],
+      card: { title: '职业功课卡', tag: j, note: '专业细节以剧组顾问或真实从业者为准。', sections: [
+        { t: '常用说法', items: ['先说结论，再讲理由'] }, { t: '习惯动作', items: ['手上总有点事做', '先听完再开口'] }, { t: r + '会用到的', items: ['还没聊到'] }] } },
+    bio: { example: r + ' ·《' + n + '》',
+      script: [{ a: '第 1 题：' + r + '第一次出场时，心里最惦记的是什么？' }, { u: '（这里换成你的回答）' },
+        { a: '第 2 题：' + r + '最怕被谁看穿？' }, { u: '（这里换成你的回答）' },
+        { a: '第 3 题：' + r + '一个人的时候，会做什么？' }, { u: '（这里换成你的回答）' }],
+      card: { title: '人物小传', tag: r, note: '这是通用示意。连上 AI 后，会只用你说过的话来写。', sections: [
+        { t: '她惦记什么', items: ['还没回答'] }, { t: '她怕什么', items: ['还没回答'] }, { t: '一个人的时候', items: ['还没回答'] }] } },
+    press: { example: '《' + n + '》宣传采访 · 5 个问题', event: '《' + n + '》宣传采访',
+      script: [{ a: '第 1 题：' + r + '这个角色，最打动你的是哪一点？' }, { u: '（这里换成你的回答）' },
+        { a: '第 2 题：演' + r + '时，你做了哪些准备？' }, { u: '（这里换成你的回答）' }],
+      card: { title: '采访要点', tag: '《' + n + '》宣传', note: '口径以宣传团队为准。不打分，只整理你说过的话。', sections: [
+        { t: '最打动我的一点', items: ['还没回答'] }, { t: '我的准备', items: ['还没回答'] }] } },
+    line: { example: '（拍一句《' + n + '》里的台词）',
+      script: [{ u: '（拍一句《' + n + '》里的台词）' }, { a: '收到。我分成三张卡给你。' }],
+      card: { title: '台词速懂', tag: r, note: '这是通用示意。连上 AI 后，会解释你发来的那一句。', sections: [
+        { t: '字面意思', items: ['连上 AI 后显示'] }, { t: '潜台词', items: ['连上 AI 后显示'] }, { t: '这时候怎么演', items: ['连上 AI 后显示'] }] } }
+  };
+}
+const pack = d => PACKS[d.name] || genericPack(d);
+// 一句话做网页：示例测试页里的角色（据公开报道）
 const ROLES = [
-  { n: '余梦', d: '外柔内刚，认准了就一步步走出自己的路。' },
-  { n: '孟钰', d: '心里有主意，嘴上不多说，关键时候最靠得住。' },
-  { n: '陈雀儿', d: '机灵爱笑，走到哪里都能把气氛点亮。' }
+  { n: '余梦', s: '《美人余》', d: '看着好命，其实心里有数。被骗了不哭不闹，一件件把属于自己的拿回来。' },
+  { n: '江飞燕', s: '《我不是大师》', d: '有很多张脸，也最会看人。心软藏在最后一张脸下面。' },
+  { n: '黄蓉', s: '《射雕英雄传》', d: '机灵、反应快，总能想到别人想不到的办法。' }
+];
+const QUIZ = [
+  { q: '发现有人在骗你，你会……', f: '五周年纪念日，你发现身边人在演戏，你……', o: ['先不声张，悄悄留证据', '将计就计，反手做个局', '当场想个法子拆穿'] },
+  { q: '朋友眼里的你是……', f: '如果朋友给你起外号，会是……', o: ['靠谱', '猜不透', '鬼点子多'] },
+  { q: '你更喜欢哪种打扮？', f: '明天拍定妆照，你会偷偷选……', o: ['利落的西装', '一身戏服', '方便跑跳的短打'] },
+  { q: '遇到难题，你会……', f: '老板临时甩来一个大难题，你……', o: ['列清单，一件件解决', '先看清每个人想要什么', '先想个巧办法'] },
+  { q: '你最想拥有的能力？', f: '给你一个超能力，你选……', o: ['看穿谎言', '变成任何人', '永远有办法'] }
 ];
 const MODS = ['改成淡蓝色', '题目再有趣一点', '加上我的签名'];
-const PHRASES = [
-  { label: '台词速懂', text: '这句台词什么意思？古人这时候会怎么做？' },
-  { label: '职业功课', text: '我要演一个律师，你扮律师和我聊十分钟，再告诉我律师说话和站姿有什么习惯。' },
-  { label: '人物小传', text: '我要演余梦，你一次问我一个问题，问完帮我整理成小传，只用我说过的话。' },
-  { label: '采访陪练', text: '今天是《美人余》的发布会，你扮记者问我五个问题。' },
-  { label: '整理要点', text: '把我刚才说的，整理成两三个要点。' },
-  { label: '做网页', text: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。' }
+const ORDER = ['job', 'bio', 'line', 'press', 'web'];
+let K = 1, SLOT = 230;
+// 话术卡跟着当前这部戏变
+const phrases = d => [
+  { label: '台词速懂', text: '我在演《' + d.name + '》里的' + d.role + '。这句台词什么意思？潜台词是什么？这时候可以怎么演？' },
+  { label: '职业功课', text: '我要演' + d.role + '，她会和' + d.job + '打交道。你扮一位' + d.job + '和我聊十分钟，再告诉我这一行说话和动作有什么习惯。' },
+  { label: '人物小传', text: '我要演《' + d.name + '》的' + d.role + '。你一次问我一个问题，问完帮我整理成小传，只用我说过的话。' },
+  { label: '采访陪练', text: '今天是《' + d.name + '》的宣传采访，你扮记者问我五个关于' + d.role + '的问题。' },
+  { label: '整理要点', text: '把我刚才说的，整理成两三个要点，不要加我没说过的意思。' },
+  { label: '做网页', text: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。' }
 ];
+// 默认的两部戏。identity 是她在戏里的身份，job 是“职业功课”里 AI 要扮的那一行
 const DEFAULT_DRAMAS = [
-  { name: '美人余', role: '余梦', job: '律师', poster: 'posters/meirenyu.jpg', pos: '45% 45%' },
-  { name: '我不是大师', role: '江飞燕', job: '戏班花旦', poster: 'posters/wobushidashi.jpg', pos: '30% 20%' }
+  { name: '美人余', role: '余梦', identity: '富家独生女', job: '婚姻家事律师', poster: 'posters/meirenyu.jpg', pos: '45% 45%' },
+  { name: '我不是大师', role: '江飞燕', identity: '戏班花旦 · 天相派卧底', job: '民国戏班花旦', poster: 'posters/wobushidashi.jpg', pos: '30% 20%' }
 ];
 
 // ── 小工具 ──
@@ -305,13 +375,19 @@ const store = {
 // ── 状态 ──
 const S = {
   screen: 'home', from: 'home', toolId: 'web', stage: 'intro', mode: null, msgs: [], step: 0, waiting: false, recording: false,
-  saved: store.get('saved', [{ tool: 'job', title: '职业功课卡 · 律师', ts: Date.now() - 864e5 }]),
+  saved: store.get('saved', [{ tool: 'job', title: '职业功课卡 · 婚姻家事律师', ts: Date.now() - 864e5 }]),
   card: 0, menu: false, sheet: null, draft: { name: '', role: '', job: '' },
   dramas: store.get('dramas', DEFAULT_DRAMAS), dramaIdx: store.get('dramaIdx', 0),
   savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: '',
   ai: false, aiCard: null, webHtml: null, thinkText: '', arkDraft: null, arkStatus: null
 };
 if (!Array.isArray(S.dramas) || !S.dramas.length) S.dramas = DEFAULT_DRAMAS.slice();
+// 旧版本存的默认戏：换成新的资料，保留她自己传的海报
+S.dramas = S.dramas.map(d => {
+  const def = DEFAULT_DRAMAS.find(x => x.name === d.name);
+  if (!def) return { identity: d.job, ...d };
+  return d.poster && String(d.poster).startsWith('data:') ? { ...def, poster: d.poster, pos: d.pos } : { ...def };
+});
 if (!(S.dramaIdx >= 0 && S.dramaIdx < S.dramas.length)) S.dramaIdx = 0;
 
 let timers = [], iv = 0, toastT = 0, gen = 0, ctl = null;
@@ -330,12 +406,8 @@ function flash(msg, ms) {
   toastT = setTimeout(() => { el.hidden = true; }, ms || 1600);
 }
 const drama = () => S.dramas[S.dramaIdx] || S.dramas[0];
-// 换戏后，把示例里的剧名 / 角色 / 职业换成当前这部戏的
-function T(id) {
-  const d = drama();
-  if (!d || (d.name === '美人余' && d.role === '余梦' && d.job === '律师')) return TOOLS[id];
-  return JSON.parse(JSON.stringify(TOOLS[id]).split('美人余').join(d.name).split('余梦').join(d.role).split('律师').join(d.job));
-}
+// 五本书的通用部分 + 当前这部戏的示意内容
+const T = id => ({ ...TOOLS[id], ...(pack(drama())[id] || {}) });
 function when(ts) {
   const d = new Date(ts), now = new Date(), day = 864e5;
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -397,23 +469,29 @@ function parseJSON(text) {
   if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch (e) {} }
   throw { code: 'json' };
 }
+// 发给豆包的共同背景：她是谁、在准备哪部戏、公开简介、底线
+function ctx() {
+  const d = drama(), b = pack(d).brief;
+  return '你在“一桐的 AI 排练室”里陪演员李一桐（本名李雪）备戏。她正在准备《' + d.name + '》，演' + d.role + (d.identity ? '（' + d.identity + '）' : '') + '。\n' +
+    (b ? '这部戏的公开简介：' + b + '\n只根据这段简介理解剧情。简介里没有的情节、台词和人物关系不要编；需要的时候就说“以剧本为准”。\n'
+       : '这部戏没有提供简介，不要编造剧情，只围绕她说过的内容。\n') + RULES + '\n\n';
+}
 // 每本书对 AI 的要求
 function sysFor(id) {
   const d = drama(), n = S.msgs.filter(m => m.role === 'a').length + 1;
-  const who = '演员李一桐，她要在《' + d.name + '》里演' + d.role + '（职业：' + d.job + '）';
-  return {
-    job: '你在扮演一位做了很多年的' + d.job + '。对面是' + who + '，来找你了解这一行。' + (n === 1 ? '先用一两句话自我介绍，问她想了解什么。' : '') +
-      '像真人聊天一样口语化回答，每次最多三句话，讲具体的小细节或小习惯。不要用列表和 markdown。' + RULES,
-    bio: '你是表演老师，在帮' + who + '写人物小传。现在问第 ' + n + ' 题。只输出问题本身，以“第 ' + n + ' 题：”开头，不超过 30 个字；从具体的生活细节问起，不要重复问过的方向。' + RULES,
-    press: '你扮演一位娱乐记者，在《' + d.name + '》发布会上采访' + who + '。现在问第 ' + n + ' 题。只输出问题本身，以“第 ' + n + ' 题：”开头，不超过 40 个字；像真实记者，礼貌，不问外貌、身材、年龄和私生活。' + RULES,
-    line: '你是古装剧的台词老师，' + who + '。她发来一句台词（可能是图片）。用一两句话口语化地回应，点出这句的关键词，告诉她你会分成几张卡讲。不要列表和 markdown。' + RULES
+  return ctx() + {
+    job: '现在你扮演一位做了很多年的' + d.job + '，帮她理解' + d.role + '会接触到的这一行。' + (n === 1 ? '先用一两句话自我介绍，再问她想了解什么。' : '') +
+      '像真人聊天一样口语化，每次最多三句话。多讲具体的小细节、小习惯；能和' + d.role + '在剧里的处境连上，就顺口点一句。不要用列表和 markdown。',
+    bio: '现在你是表演老师，在帮她写' + d.role + '的人物小传。现在问第 ' + n + ' 题（共 3 题）。题目落在剧情里的关键时刻或' + d.role + '的处境上（只用简介里有的），从具体的画面、动作、心里话问起；一次只问一件事，不重复问过的方向。只输出问题本身，以“第 ' + n + ' 题：”开头，不超过 35 个字。',
+    press: '现在你扮演一位娱乐记者，在' + pack(d).press.event + '上采访她。现在问第 ' + n + ' 题。问题围绕' + d.role + '这个角色、她为这个角色做的准备、这部戏的看点；不剧透简介以外的内容；礼貌，像真实记者；不问外貌、身材、年龄、感情和私生活，不让她评价别的演员。只输出问题本身，以“第 ' + n + ' 题：”开头，不超过 40 个字。',
+    line: '现在你是台词老师。她发来' + d.role + '的一句台词（可能是照片）。用一两句话口语化地回应：点出这句最关键的意思，告诉她你会分成三张卡讲。古装或民国戏留意时代讲究和行话，现代戏重点是潜台词和情绪。不要列表和 markdown。'
   }[id];
 }
 const CARD_ASK = {
-  job: () => '请把上面的聊天整理成一张给演员看的' + drama().job + '职业功课卡。sections 固定三项：“常用说法”“习惯动作”“一天怎么过”，每项 2-3 条，每条一句话。tag 写职业名。可以补充这个职业的常识，不要编剧情。',
-  bio: () => '请根据她的回答整理人物小传。只用她回答里的内容，可以把散的话连成通顺的句子，不要添加新情节。sections 固定四项：“成长经历”“想要什么”“怕什么”“和别人的关系”，没说到的写“还没回答”。tag 写角色名。',
-  press: () => '请把她的回答整理成采访要点。每个问题一个 section，t 写问题的简短概括，items 是 2-3 个要点，每条不超过 25 字，只用她说过的意思，不评价好坏。tag 写“《' + drama().name + '》发布会”。',
-  line: () => '请解释她发来的这句台词。sections 依次是：“白话意思”“典故出处”“这时候怎么做”，有容易读错的字再加一项“读音提醒”（写“字 拼音”）。每项 1-2 条，口语化。典故不确定就写“没有明确出处”，不要编。tag 写这句里最关键的词。'
+  job: d => '把上面的聊天整理成一张给演员看的职业功课卡。sections 固定三项：“常用说法”“习惯动作”“' + d.role + '会用到的”（结合她在剧里的处境），每项 2-3 条，每条一句话。tag 写“' + d.job + '”。可以补充这一行的常识，不要编剧情。',
+  bio: d => '根据她的回答整理' + d.role + '的人物小传。只用她回答里的内容，可以把散的话连成通顺的句子，不添加新情节。每题整理成一个 section，t 用 4-6 个字概括这题问的是什么；最后加一项“还可以想想”，列 1-2 个值得接着想的问题。跳过的题不写。tag 写“' + d.role + '”。',
+  press: d => '把她的回答整理成采访要点。每个问题一个 section，t 写问题的简短概括，items 是 2-3 个要点，每条不超过 25 字，只用她说过的意思，不加新观点，不评价好坏。tag 写“' + pack(d).press.event + '”。',
+  line: d => '解释她发来的这句台词。sections 依次是“字面意思”“潜台词”“这时候怎么演”；古装或民国戏再加“时代讲究”（典故、礼数或行话）；有容易读错的字再加“读音提醒”（写“字 拼音”）。每项 1-2 条，口语化。“这时候怎么演”只给可以试的方向，不评价她演得好坏。典故和行话不确定就写“不确定，请核对”，不要编。tag 写这句里最关键的词。'
 };
 function history() {
   const h = S.msgs.filter(m => m.text).map(m => {
@@ -444,7 +522,7 @@ async function aiSay(fallback, next) {
 async function aiCard() {
   const tok = gen, t = T(S.toolId);
   try {
-    const text = await ask({ maxTokens: 1500, system: CARD_ASK[S.toolId]() + '\n只回复一个 JSON 对象，格式：{"tag":"…","sections":[{"t":"…","items":["…"]}]}。' + RULES,
+    const text = await ask({ maxTokens: 1500, system: ctx() + CARD_ASK[S.toolId](drama()) + '\n只回复一个 JSON 对象，格式：{"tag":"…","sections":[{"t":"…","items":["…"]}]}。',
       messages: [{ role: 'user', content: S.msgs.map(m => (m.role === 'a' ? 'AI：' : '她：') + (m.img ? '（发了一张台词照片）' : m.text)).join('\n') + '\n\n请整理。' }] });
     if (tok !== gen) return;
     const j = parseJSON(text);
@@ -463,7 +541,8 @@ const extractHTML = t => { const m = t.match(/```html\s*([\s\S]*?)(```|$)/i); if
 async function aiWeb(need) {
   const tok = gen, prev = S.webHtml, d = drama();
   set({ stage: 'thinking', waiting: false, thinkText: prev ? '正在按你说的改…' : 'AI 正在做网页…' });
-  const head = '你是很会做手机网页的设计师。请做一个完整、能直接运行的单文件 HTML 页面。\n要求：只用内联 CSS 和 JS，不引用任何外部资源；手机竖屏优先，简体中文，字号大，按钮好点；风格简洁有质感。\n页面主人是演员李一桐（本名李雪），这是她给粉丝的小互动。她演过的角色可以用：余梦（《美人余》）、孟钰（《狂飙》）、' + d.role + '（《' + d.name + '》）。不要编造剧情。\n只输出代码，放在一个 ```html 代码块里，前后不要写解释。' + RULES;
+  const roles = ROLES.some(r => r.n === d.role) ? ROLES : [...ROLES, { n: d.role, s: '《' + d.name + '》', d: d.identity || '' }];
+  const head = '你是很会做手机网页的设计师。请做一个完整、能直接运行的单文件 HTML 页面。\n要求：只用内联 CSS 和 JS，不引用任何外部资源；手机竖屏优先，简体中文，字号大，按钮好点；风格简洁有质感。\n页面主人是演员李一桐（本名李雪），这是她给粉丝的小互动。涉及她的角色时，只用下面这些公开资料，不要编剧情和台词：\n' + roles.map(r => '- ' + r.n + r.s + '：' + r.d).join('\n') + '\n只输出代码，放在一个 ```html 代码块里，前后不要写解释。' + RULES;
   try {
     const text = await ask({ maxTokens: 8000, system: head,
       messages: [{ role: 'user', content: prev ? '这是当前页面的完整代码：\n```html\n' + prev + '\n```\n\n请按这条意见改好，输出改完后的完整代码：' + need : '需求：' + need }],
@@ -666,7 +745,7 @@ function homeView() {
   const menu = !S.menu ? '' : `<div class="menu">
       <div class="menu-h">正在准备的戏</div>
       ${S.dramas.map((x, i) => `<button class="menu-item" data-act="pick" data-i="${i}">
-        <span class="mi-text"><span class="mi-name">《${esc(x.name)}》</span><span class="mi-sub">${esc(x.role)} · ${esc(x.job)}</span></span>
+        <span class="mi-text"><span class="mi-name">《${esc(x.name)}》</span><span class="mi-sub">${esc(x.role)} · ${esc(x.identity || x.job)}</span></span>
         <span class="check">${i === S.dramaIdx ? '✓' : ''}</span></button>`).join('')}
       <div class="menu-foot"><button data-act="add">＋ 新增</button><button data-act="manage">管理</button></div>
     </div>`;
@@ -701,8 +780,8 @@ function savedView() {
 function phrasesView() {
   return `<div class="page">
     <h1 class="title">随身话术卡</h1>
-    <div class="lead">离开这里，也能照着对任何 AI 说</div>
-    <div class="list">${PHRASES.map((p, i) => `<div class="phrase">
+    <div class="lead">离开这里，也能照着对任何 AI 说 · 跟着《${esc(drama().name)}》</div>
+    <div class="list">${phrases(drama()).map((p, i) => `<div class="phrase">
         <span class="phrase-l">${esc(p.label)}</span>
         <span class="phrase-t">“${esc(p.text)}”</span>
         <div class="phrase-r"><button class="copy" data-act="copy" data-i="${i}">复制</button></div>
@@ -732,7 +811,7 @@ function webView() {
         ${asking ? `<span class="web-q" style="color:${ink}">${esc(fun ? q.f : q.q)}</span>
           <div class="opts">${q.o.map((o, i) => `<button class="opt" data-act="webPick" data-i="${i}" style="border-color:${accent};color:${ink}">${esc(o)}</button>`).join('')}</div>`
         : `<div class="web-done"><b style="color:${accent}">你最像</b><span class="web-role" style="color:${ink}">${esc(role.n)}</span>
-            <span class="web-rd">${esc(role.d)}</span><button class="replay" data-act="replay" style="color:${accent}">再测一次</button></div>`}
+            <span class="web-rd">${esc(role.s)} · ${esc(role.d)}</span><button class="replay" data-act="replay" style="color:${accent}">再测一次</button></div>`}
         ${S.mods.includes('加上我的签名') ? `<span class="sign" style="color:${accent}">— 李雪（李一桐）</span>` : ''}
       </div>
     </div>
@@ -806,13 +885,13 @@ function sheetView() {
       </div>`
     : S.sheet === 'add'
     ? `<div class="form">
-        ${[['name', '剧名', '例如：书卷一梦'], ['role', '我演的角色', '例如：江飞燕'], ['job', '角色的职业', '例如：戏班花旦']].map(([k, l, ph]) =>
+        ${[['name', '剧名', '例如：书卷一梦'], ['role', '我演的角色', '例如：江飞燕'], ['job', '角色的身份或职业', '例如：律师']].map(([k, l, ph]) =>
           `<label class="field"><span>${l}</span><input data-field="${k}" value="${esc(S.draft[k])}" placeholder="${ph}"></label>`).join('')}
         <span class="hint">保存后，五本书都会换成这部戏的内容。</span>
         <button class="btn save-drama" data-act="saveDrama" style="background:${ok ? '#1D1C1A' : '#C9C4BA'}">保存并切换</button>
       </div>`
     : `<div class="mlist">${S.dramas.map((d, i) => `<div class="mrow">
-          <span class="mi-text"><span class="mi-name">《${esc(d.name)}》</span><span class="mi-sub">${esc(d.role)} · ${esc(d.job)}</span></span>
+          <span class="mi-text"><span class="mi-name">《${esc(d.name)}》</span><span class="mi-sub">${esc(d.role)} · ${esc(d.identity || d.job)}</span></span>
           <span class="cur">${i === S.dramaIdx ? '当前' : ''}</span>
           <label class="chip">${d.poster ? '换海报' : '传海报'}<input type="file" accept="image/*" data-upload="${i}" hidden></label>
           <button class="chip" data-act="remove" data-i="${i}" style="color:${S.dramas.length > 1 ? '#B8432B' : '#C9C4BA'}">删除</button>
@@ -883,7 +962,7 @@ const ACT = {
   arkSave: () => { if (!S.arkStatus || S.arkStatus.kind !== 'busy') testArk(); },
   arkClear: () => { ARK = null; store.set('ark', null); S.arkDraft.key = ''; set({ arkStatus: { kind: 'err', text: '已清除，现在是演示模式。' } }); },
   send: () => sendTyped(),
-  copy: el => copyText(PHRASES[+el.dataset.i].text),
+  copy: el => copyText(phrases(drama())[+el.dataset.i].text),
   back, secondary, save,
   auto: () => start('auto'),
   self: () => start('self'),
@@ -894,7 +973,7 @@ const ACT = {
   saveDrama: () => {
     const { name, role, job } = S.draft;
     if (!name.trim() || !role.trim()) return flash('请填写剧名和角色');
-    const nd = { name: name.trim(), role: role.trim(), job: job.trim() || '角色' };
+    const nd = { name: name.trim(), role: role.trim(), identity: job.trim(), job: job.trim() || '角色' };
     set({ dramas: [...S.dramas, nd], dramaIdx: S.dramas.length, sheet: null });
     persistDramas(); flash('已切换到《' + nd.name + '》');
   },
