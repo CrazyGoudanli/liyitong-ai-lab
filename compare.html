@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#171B27">
+<title>表情对比</title>
+<!--
+  参考视频换文件：改页面底部的 REFS，把 mp4 放进 assets/expression-compare/。
+  录像只留在浏览器内存（Blob URL），不上传、不写服务器，刷新就没了。
+-->
+<style>
+:root {
+  color-scheme: dark;
+  --paper: #171B27;
+  --sheet: #212838;
+  --ink: #F1ECE3;
+  --ink-2: #A9B0C0;
+  --ink-3: #7C8596;
+  --rule: #2D364A;
+  --accent: #E6B96C;
+  --accent-ink: #171B27;
+  --accent-soft: rgba(230, 185, 108, .18);
+  --font-display: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --radius: 10px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; background: var(--paper); color: var(--ink); }
+body {
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.5;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+button, a { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.half { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.half + .half { box-shadow: inset 0 1px 0 var(--rule); }
+.half.sync .stage { box-shadow: inset 0 0 0 3px var(--accent); }
+.stage { flex: 1; min-height: 0; position: relative; background: #0E1119; overflow: hidden; }
+.stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #0E1119;
+}
+/* 参考片是竖屏，靠上取景，避免把头顶裁掉 */
+#ref { object-position: center 16%; }
+.mirror { transform: scaleX(-1); }
+.is-hidden { visibility: hidden; }
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: calc(2px + env(safe-area-inset-top, 0px)) 12px 0;
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+.back {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px 0 0;
+  text-decoration: none; font-size: 17px;
+}
+h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.tabs {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 12px 8px;
+}
+.chip {
+  flex: 1 1 calc(33.33% - 6px);
+  min-width: 0;
+  min-height: 42px;
+  padding: 6px 4px;
+  border-radius: 99px;
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+.chip[aria-selected="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.chip.locked { opacity: .45; }
+
+.badge {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  bottom: 10px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(14, 17, 25, .72);
+  font-size: 13px;
+  letter-spacing: .08em;
+}
+.miss, .cam-msg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px 20px;
+  text-align: center;
+  background: rgba(14, 17, 25, .82);
+}
+.miss p, .cam-msg p { margin: 0; font-size: 17px; }
+.cam-msg { z-index: 3; }
+
+.rec-flag {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: rgba(14, 17, 25, .78);
+  font-size: 15px;
+  font-weight: 600;
+}
+.rec-flag::before {
+  content: "";
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #FF5A4A;
+  animation: pulse 1.2s ease-out infinite;
+}
+@keyframes pulse {
+  70% { box-shadow: 0 0 0 8px rgba(255, 90, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 90, 74, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rec-flag::before { animation: none; }
+}
+
+.dock {
+  flex: none;
+  background: var(--paper);
+  padding: 10px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+.actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 52px; width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  font-size: 17px; font-weight: 600;
+  touch-action: manipulation;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.stop:not(:disabled) { background: #C2412F; border-color: #C2412F; color: #fff; }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+.hint { margin: 8px 0 0; text-align: center; color: var(--ink-2); font-size: 14px; min-height: 1.4em; }
+.fine { margin: 2px 0 0; text-align: center; color: var(--ink-3); font-size: 12px; }
+</style>
+</head>
+<body>
+<main class="app">
+  <section class="half" id="half-ref" aria-label="参考视频">
+    <div class="topbar">
+      <a class="back" href="./">‹ 返回</a>
+      <h1>表情对比</h1>
+    </div>
+    <div class="tabs" id="tabs" role="tablist" aria-label="参考表情"></div>
+    <div class="stage">
+      <video id="ref" playsinline webkit-playsinline preload="metadata" disablepictureinpicture disableremoteplayback></video>
+      <div class="miss" id="ref-miss" hidden>
+        <p>这段参考还没放上</p>
+      </div>
+      <span class="badge">参考</span>
+    </div>
+  </section>
+
+  <section class="half" id="half-me" aria-label="我的镜头">
+    <div class="stage">
+      <video id="live" class="mirror" playsinline webkit-playsinline autoplay muted disablepictureinpicture></video>
+      <video id="clip" class="mirror is-hidden" playsinline webkit-playsinline preload="auto" disablepictureinpicture disableremoteplayback></video>
+      <div class="cam-msg" id="cam-msg" hidden>
+        <p id="cam-text"></p>
+        <button type="button" class="btn" id="retry">再试一次</button>
+      </div>
+      <p class="rec-flag" id="rec-flag" hidden>正在录</p>
+      <span class="badge">我</span>
+    </div>
+    <div class="dock">
+      <div class="actions">
+        <button type="button" class="btn primary" id="btn-rec" disabled>录制</button>
+        <button type="button" class="btn stop" id="btn-stop" disabled>停止</button>
+        <button type="button" class="btn" id="btn-play" disabled>播放</button>
+      </div>
+      <p class="hint" id="hint" aria-live="polite">点一个表情</p>
+      <p class="fine">录像不上传，刷新就没了。</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+"use strict";
+
+/* 五段参考视频，顺序 1→5。换文件时改 src，并把 mp4 放进 assets/expression-compare/。
+   路径用相对地址，GitHub Pages 子目录才能找到。 */
+const REFS = [
+  { id: "anger", label: "愤怒排斥", src: "assets/expression-compare/01-愤怒排斥.mp4" },
+  { id: "shy", label: "害羞躲闪", src: "assets/expression-compare/02-害羞躲闪.mp4" },
+  { id: "fear", label: "害怕躲避", src: "assets/expression-compare/03-害怕躲避.mp4" },
+  { id: "grief", label: "伤心抗拒", src: "assets/expression-compare/04-伤心抗拒.mp4" },
+  { id: "tired", label: "疲惫低头", src: "assets/expression-compare/05-疲惫低头.mp4" },
+];
+const MAX_RECORD_MS = 20000;
+
+/* 录制中不能换标签。正在同播时换标签：停下回放，改播新的参考。
+   点「播放」：当前参考和刚录的录像都从头一起放。录像只在本页内存里。 */
+
+const $ = (id) => document.getElementById(id);
+const refVideo = $("ref");
+const live = $("live");
+const clip = $("clip");
+const hint = $("hint");
+const refMiss = $("ref-miss");
+const camMsg = $("cam-msg");
+const camText = $("cam-text");
+const recFlag = $("rec-flag");
+const btnRec = $("btn-rec");
+const btnStop = $("btn-stop");
+const btnPlay = $("btn-play");
+const tabButtons = [];
+
+let index = 0;
+let stream = null;
+let camOk = false;
+let camSeq = 0;
+let recorder = null;
+let chunks = [];
+let recording = false;
+let stopping = false;
+let clipUrl = "";
+let together = false;
+let recStarted = 0;
+let tick = 0;
+let stopTimer = 0;
+let pendingHint = "";
+
+refVideo.playsInline = true;
+live.playsInline = true;
+live.muted = true;
+clip.playsInline = true;
+
+function setHint(text) { hint.textContent = text; }
+
+function sameSrc(video, rel) {
+  if (!rel) return false;
+  try { return video.currentSrc === new URL(rel, location.href).href; } catch { return false; }
+}
+
+function paint() {
+  tabButtons.forEach((btn, i) => {
+    btn.setAttribute("aria-selected", i === index ? "true" : "false");
+    btn.classList.toggle("locked", recording);
+  });
+  btnRec.disabled = !camOk || recording;
+  btnRec.classList.toggle("primary", !recording && !clipUrl);
+  btnStop.disabled = !recording;
+  btnPlay.disabled = !clipUrl || recording;
+  btnPlay.classList.toggle("primary", !recording && !!clipUrl);
+  recFlag.hidden = !recording;
+  $("half-ref").classList.toggle("sync", together);
+  $("half-me").classList.toggle("sync", together);
+}
+
+function showLive() {
+  clip.classList.add("is-hidden");
+  live.classList.remove("is-hidden");
+  const p = live.play();
+  if (p) p.catch(() => {});
+}
+
+function showClip() {
+  live.classList.add("is-hidden");
+  clip.classList.remove("is-hidden");
+}
+
+function endTogether() {
+  together = false;
+  clip.pause();
+  showLive();
+}
+
+function playRef() {
+  const p = refVideo.play();
+  if (p) p.catch((e) => {
+    if (!e || e.name === "AbortError") return;
+    refMiss.hidden = false;
+  });
+}
+
+function selectRef(i) {
+  if (recording) {
+    setHint("先点停止，再换表情");
+    return;
+  }
+  const wasTogether = together;
+  if (together) endTogether();
+  const item = REFS[i];
+  index = i;
+  refMiss.hidden = true;
+  refVideo.poster = item.poster || "";
+  if (!sameSrc(refVideo, item.src)) refVideo.src = item.src;
+  else {
+    try { refVideo.pause(); refVideo.currentTime = 0; } catch {}
+  }
+  playRef();
+  paint();
+  if (wasTogether && clipUrl) setHint("换好了。点播放，和刚录的一起看");
+  else setHint(clipUrl ? "点播放，上下一起看" : "看着上面学，再点录制");
+}
+
+function buildTabs() {
+  const box = $("tabs");
+  REFS.forEach((item, i) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "chip";
+    btn.setAttribute("role", "tab");
+    btn.textContent = item.label;
+    btn.addEventListener("click", () => selectRef(i));
+    box.appendChild(btn);
+    tabButtons.push(btn);
+  });
+  const first = REFS[0];
+  refVideo.poster = first.poster || "";
+  refVideo.src = first.src;
+  index = 0;
+  paint();
+}
+
+refVideo.addEventListener("error", () => { refMiss.hidden = false; });
+refVideo.addEventListener("loadeddata", () => { refMiss.hidden = true; });
+
+function camMessage(err) {
+  const name = err && err.name;
+  if (name === "NotAllowedError" || name === "PermissionDeniedError") return "没有开摄像头。请在浏览器里允许，再点重试。";
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") return "没找到前置摄像头。";
+  if (name === "NotReadableError" || name === "TrackStartError") return "摄像头被别的应用占用了。关掉后再试。";
+  if (name === "SecurityError") return "摄像头要在本机或 https 网页里才能用。";
+  return "摄像头打不开。请用 Safari 或 Chrome 再试。";
+}
+
+function showCamError(text) {
+  camText.textContent = text;
+  camMsg.hidden = false;
+  setHint(text);
+}
+
+function hideCamError() { camMsg.hidden = true; }
+
+function stopTracks() {
+  if (!stream) return;
+  stream.getTracks().forEach((t) => t.stop());
+  stream = null;
+  live.srcObject = null;
+  camOk = false;
+}
+
+async function openCam() {
+  const seq = ++camSeq;
+  hideCamError();
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    camOk = false;
+    showCamError("摄像头要在本机或 https 网页里才能用。请用 Safari 或 Chrome 打开。");
+    paint();
+    return;
+  }
+  stopTracks();
+  // 先精确要前置。个别电脑没有标成前置的镜头时，再放宽一次，仍然优先前置。
+  const tries = [
+    { audio: false, video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } } },
+    { audio: false, video: { facingMode: { ideal: "user" } } },
+  ];
+  let lastErr = null;
+  let next = null;
+  for (const constraints of tries) {
+    try {
+      next = await navigator.mediaDevices.getUserMedia(constraints);
+      lastErr = null;
+      break;
+    } catch (e) {
+      lastErr = e;
+      if (!e || (e.name !== "OverconstrainedError" && e.name !== "ConstraintNotSatisfiedError")) break;
+    }
+  }
+  if (seq !== camSeq) {
+    if (next) next.getTracks().forEach((t) => t.stop());
+    return;
+  }
+  if (!next) {
+    camOk = false;
+    showCamError(camMessage(lastErr));
+    paint();
+    return;
+  }
+  stream = next;
+  live.srcObject = stream;
+  try { await live.play(); } catch {}
+  if (seq !== camSeq) return;
+  camOk = true;
+  hideCamError();
+  if (typeof MediaRecorder === "undefined") setHint("这个浏览器不能录。请换 Safari 或 Chrome。");
+  else if (!recording) setHint(clipUrl ? "点播放，上下一起看" : "点一个表情");
+  paint();
+}
+
+function pickMime() {
+  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return "";
+  const list = ["video/mp4", "video/webm;codecs=vp8,opus", "video/webm;codecs=vp8", "video/webm"];
+  for (const type of list) {
+    try { if (MediaRecorder.isTypeSupported(type)) return type; } catch {}
+  }
+  return "";
+}
+
+function updateRecLabel() {
+  const s = Math.max(0, Math.floor((Date.now() - recStarted) / 1000));
+  recFlag.textContent = "正在录 · " + s + " 秒";
+}
+
+function forgetClip() {
+  if (clipUrl) URL.revokeObjectURL(clipUrl);
+  clipUrl = "";
+  clip.removeAttribute("src");
+  clip.load();
+}
+
+function onRecStop() {
+  stopping = false;
+  recording = false;
+  clearInterval(tick);
+  clearTimeout(stopTimer);
+  const mime = (recorder && recorder.mimeType) || pickMime() || "video/webm";
+  const blob = new Blob(chunks, { type: mime });
+  chunks = [];
+  try { refVideo.pause(); } catch {}
+  if (!blob.size) {
+    setHint("没有录上，再试一次");
+    paint();
+    return;
+  }
+  forgetClip();
+  clipUrl = URL.createObjectURL(blob);
+  clip.src = clipUrl;
+  showLive();
+  setHint(pendingHint || "录好了，点播放一起看");
+  pendingHint = "";
+  paint();
+}
+
+function startRec() {
+  if (recording || stopping || !stream) return;
+  if (typeof MediaRecorder === "undefined") {
+    setHint("这个浏览器不能录。请换 Safari 或 Chrome。");
+    return;
+  }
+  if (together) endTogether();
+  showLive();
+  const mime = pickMime();
+  let rec;
+  try {
+    rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  } catch {
+    setHint("这台手机暂时不能录。");
+    return;
+  }
+  chunks = [];
+  rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+  rec.onerror = () => {
+    recording = false;
+    stopping = false;
+    clearInterval(tick);
+    clearTimeout(stopTimer);
+    setHint("录制中断了，再试一次");
+    paint();
+  };
+  rec.onstop = onRecStop;
+  recorder = rec;
+  try { rec.start(); }
+  catch {
+    setHint("没能开始录，再试一次");
+    return;
+  }
+  recording = true;
+  recStarted = Date.now();
+  try { refVideo.currentTime = 0; } catch {}
+  playRef();
+  updateRecLabel();
+  clearInterval(tick);
+  tick = setInterval(updateRecLabel, 250);
+  clearTimeout(stopTimer);
+  stopTimer = setTimeout(() => stopRec("到 20 秒了，已停下。点播放一起看"), MAX_RECORD_MS);
+  setHint("正在录，做完点停止");
+  paint();
+}
+
+function stopRec(reason) {
+  if (!recording || stopping) return;
+  stopping = true;
+  pendingHint = reason || "录好了，点播放一起看";
+  clearTimeout(stopTimer);
+  clearInterval(tick);
+  try {
+    if (recorder && recorder.state === "recording") {
+      if (typeof recorder.requestData === "function") {
+        try { recorder.requestData(); } catch {}
+      }
+      recorder.stop();
+      return;
+    }
+  } catch {}
+  stopping = false;
+  recording = false;
+  setHint("没能停下，再试一次");
+  paint();
+}
+
+function rewind(video) {
+  try {
+    if (video.readyState >= 1) video.currentTime = 0;
+  } catch {}
+}
+
+function playTogether() {
+  if (recording || stopping) return;
+  if (!clipUrl) {
+    setHint("先录一段，再点播放");
+    return;
+  }
+  showClip();
+  rewind(refVideo);
+  rewind(clip);
+  together = true;
+  paint();
+  setHint("一起看");
+  const refTry = refVideo.play();
+  const clipTry = clip.play();
+  if (refTry) refTry.catch((e) => {
+    if (!e || e.name === "AbortError") return;
+    if (together) setHint("参考视频没播出来，先看你刚录的");
+  });
+  if (clipTry) clipTry.catch(() => {
+    together = false;
+    showLive();
+    setHint("这段录像播不了，再录一次");
+    paint();
+  });
+}
+
+clip.addEventListener("ended", () => {
+  if (!together) return;
+  together = false;
+  try { refVideo.pause(); } catch {}
+  setHint("看完了，再点播放可以重看");
+  paint();
+});
+
+btnRec.addEventListener("click", startRec);
+btnStop.addEventListener("click", () => stopRec());
+btnPlay.addEventListener("click", playTogether);
+$("retry").addEventListener("click", () => { openCam(); });
+
+buildTabs();
+openCam();
+})();
+</script>
+</body>
+</html>
