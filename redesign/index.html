@@ -78,9 +78,10 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 .dots{display:flex;justify-content:center;gap:7px;margin-top:16px}
 .dot{height:6px;width:6px;border-radius:9px;background:var(--border);transition:width .2s}
 .dot.on{width:20px;background:var(--ink)}
-.active{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;text-align:center}
+.active{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;text-align:center;min-width:0}
+.when{white-space:nowrap}
 .when{font-size:14px;color:var(--accent);font-weight:600}
-.short{font-size:17px;line-height:1.5;color:var(--sub);max-width:280px;text-wrap:pretty}
+.short{font-size:17px;line-height:1.5;color:var(--sub);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .open-btn{display:flex;margin:18px auto 0;width:200px;height:54px;border-radius:999px;background:var(--ink);color:var(--paper);align-items:center;justify-content:center;font-size:18px;font-weight:600}
 .open-btn:active{transform:scale(.97)}
 
@@ -220,13 +221,13 @@ button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cu
 // ── 内容：每部戏一套示意内容（剧情只取公开简介，台词和对话都是示意，需要团队核对） ──
 // 五本书共用的部分
 const TOOLS = {
-  web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '说一句话，AI 帮你做个给粉丝玩的小网页', kind: 'web',
+  web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '一句话，做个给粉丝玩的网页', kind: 'web',
     example: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。',
     script: [{ u: '帮我做一个测试页，问 5 个问题，告诉粉丝像我演过的哪个角色。' }, { a: '做好了，可以点着试试。想改哪里，按住直接说。' }] },
-  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '看剧本时', short: '看不懂、不知道怎么说的台词，发给 AI 问', secondary: '拍一句' },
-  job: { name: '职业功课', glyph: '职', phase: '进组前', when: '要演不熟的职业时', short: '让 AI 扮成这一行的人，你随便问' },
-  bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '刚拿到角色时', short: '回答几个问题，帮你把角色想清楚', secondary: '跳过' },
-  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '接受采访前', short: '去采访前，让 AI 扮记者先问你一遍', secondary: '再问一遍' }
+  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '看剧本时', short: '台词看不懂，发给 AI 问', secondary: '拍一句' },
+  job: { name: '职业功课', glyph: '职', phase: '进组前', when: '要演不熟的职业时', short: 'AI 扮成这一行的人陪你聊' },
+  bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '刚拿到角色时', short: '答几个问题，把角色想清楚', secondary: '跳过' },
+  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '接受采访前', short: '采访前，AI 扮记者先问你', secondary: '再问一遍' }
 };
 // 每部戏的示意内容。brief 只写公开报道里的设定，也会发给豆包当背景
 const PACKS = {
