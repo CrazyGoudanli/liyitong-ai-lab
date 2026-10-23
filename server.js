@@ -24,8 +24,24 @@ const ARK_API_KEY = process.env.ARK_API_KEY || "";
 const ARK_BASE_URL = (process.env.ARK_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3").replace(/\/$/, "");
 const ARK_MODEL = process.env.ARK_MODEL || "doubao-seed-2-1-pro-260915";
 const ACCESS_CODE = process.env.ACCESS_CODE || "";
+// Seed 系列默认会开深度思考：流式先长时间只推 reasoning_content，页面会一直转圈。
+// 排练室场景要快，默认先关思考；若模型不支持 disabled（会 400），自动去掉该字段重试。
+// 需要思考时在 ARK_EXTRA 里显式打开：{"thinking":{"type":"enabled"}}
 let ARK_EXTRA = {};
 try { if (process.env.ARK_EXTRA) ARK_EXTRA = JSON.parse(process.env.ARK_EXTRA); } catch { console.warn("ARK_EXTRA 不是合法 JSON，已忽略"); }
+const EXTRA_HAS_THINKING = Object.prototype.hasOwnProperty.call(ARK_EXTRA, "thinking");
+// "disable" | "omit" —— 记住该模型是否接受 thinking.disabled，避免每次都撞 400
+let thinkMode = EXTRA_HAS_THINKING ? "omit" : "disable";
+
+function arkPayload(messages, maxTokens) {
+  const base = { ...ARK_EXTRA, model: ARK_MODEL, messages, stream: true, max_tokens: maxTokens };
+  if (thinkMode === "disable" && !EXTRA_HAS_THINKING) return { thinking: { type: "disabled" }, ...base };
+  return base;
+}
+function thinkingUnsupported(status, detail) {
+  if (status !== 400) return false;
+  return /thinking|深度思考|reasoning/i.test(detail || "");
+}
 
 const SHELL_HEAD = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -88,22 +104,34 @@ async function chat(req, res) {
 
   const ctl = new AbortController();
   res.on("close", () => ctl.abort());
-  let up;
+  const headers = { "content-type": "application/json", authorization: "Bearer " + ARK_API_KEY };
+  let up, detail = "";
   try {
     up = await fetch(ARK_BASE_URL + "/chat/completions", {
-      method: "POST", signal: ctl.signal,
-      headers: { "content-type": "application/json", authorization: "Bearer " + ARK_API_KEY },
-      body: JSON.stringify({ ...ARK_EXTRA, model: ARK_MODEL, messages, stream: true, max_tokens: maxTokens }),
+      method: "POST", signal: ctl.signal, headers,
+      body: JSON.stringify(arkPayload(messages, maxTokens)),
     });
+    if (!up.ok) {
+      detail = (await up.text().catch(() => "")).slice(0, 400);
+      // 部分模型不接受 thinking.disabled → 去掉后重试一次
+      if (thinkingUnsupported(up.status, detail) && thinkMode === "disable" && !EXTRA_HAS_THINKING) {
+        console.warn("[ark] 模型不支持关闭思考，改为不传 thinking 重试");
+        thinkMode = "omit";
+        up = await fetch(ARK_BASE_URL + "/chat/completions", {
+          method: "POST", signal: ctl.signal, headers,
+          body: JSON.stringify(arkPayload(messages, maxTokens)),
+        });
+        if (!up.ok) detail = (await up.text().catch(() => "")).slice(0, 400);
+      }
+    }
   } catch (e) {
     if (ctl.signal.aborted) return;
     console.error("[ark] 连接失败：", e.message);
     return send(res, 502, { error: "连不上 AI 服务" });
   }
   if (!up.ok || !up.body) {
-    const detail = (await up.text().catch(() => "")).slice(0, 300);
     console.error("[ark] HTTP", up.status, detail);
-    return send(res, 502, { error: "AI 服务返回错误", status: up.status });
+    return send(res, 502, { error: "AI 服务返回错误" + (detail ? "：" + detail.slice(0, 180) : ""), status: up.status });
   }
   res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache", "x-accel-buffering": "no" });
   try { for await (const chunk of up.body) res.write(chunk); } catch {}
@@ -143,5 +171,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`一桐的 AI 排练室：http://localhost:${PORT}`);
   console.log(ARK_API_KEY ? `AI：火山方舟 ${ARK_MODEL}` : "AI：未配置 ARK_API_KEY，网页会进入演示模式");
+  if (EXTRA_HAS_THINKING) console.log(`深度思考：按 ARK_EXTRA ${JSON.stringify(ARK_EXTRA.thinking)}`);
+  else console.log("深度思考：默认尝试关闭（模型不支持时自动去掉该参数）");
   if (!ACCESS_CODE) console.log("提醒：没有设置 ACCESS_CODE，任何拿到链接的人都能用");
 });

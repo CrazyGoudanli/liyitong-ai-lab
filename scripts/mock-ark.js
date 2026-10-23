@@ -33,8 +33,21 @@ http.createServer((req, res) => {
   req.on("end", async () => {
     if (req.headers.authorization !== "Bearer mock") { res.writeHead(401); return res.end("bad key"); }
     const body = JSON.parse(raw);
+    // 用模型名含 no-disable 模拟「不支持 thinking.disabled」的 400，便于测重试
+    if (body.thinking && body.thinking.type === "disabled" && /no-disable/i.test(String(body.model || ""))) {
+      res.writeHead(400, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ error: { message: "Unsupported thinking type for the current model: disabled", type: "BadRequest" } }));
+    }
     const text = reply(body);
+    const think = body.thinking && body.thinking.type === "enabled";
     res.writeHead(200, { "content-type": "text/event-stream" });
+    // 模拟 Seed 深度思考：先推 reasoning_content，再推 content（客户端应忽略思考、只拼正文）
+    if (think) {
+      for (const piece of ["先", "想", "一下…"]) {
+        res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: "", reasoning_content: piece } }] })}\n\n`);
+        await new Promise(r => setTimeout(r, 20));
+      }
+    }
     for (let i = 0; i < text.length; i += 24) {
       res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: text.slice(i, i + 24) } }] })}\n\n`);
       await new Promise(r => setTimeout(r, 15));
