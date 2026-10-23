@@ -74,8 +74,10 @@ const FILE_TYPES = {
 function expressionAsset(pathname) {
   const prefix = "/assets/expression-compare/";
   if (!pathname.startsWith(prefix)) return null;
-  const name = pathname.slice(prefix.length);
-  if (!name || name !== path.basename(name) || name.includes("..")) return null;
+  // URL.pathname 仍是百分号编码，中文文件名要先解开。解开后再拒绝斜杠，避免读出目录外的文件。
+  let name;
+  try { name = decodeURIComponent(pathname.slice(prefix.length)); } catch { return null; }
+  if (!name || name !== path.basename(name) || name.includes("..") || name.includes("/") || name.includes("\\")) return null;
   if (!/\.(mp4|webm)$/i.test(name)) return null;
   const root = path.join(DIR, "assets", "expression-compare");
   const file = path.resolve(root, name);
