@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#F5F3EE">
+<title>一桐的 AI 排练室</title>
+<style>
+/* ── 设计稿：暖白纸色 + 墨黑 + 一个朱红点缀 ── */
+:root{
+  --paper:#F5F3EE;--ink:#1D1C1A;--accent:#B8432B;
+  --line:#E4E0D8;--line2:#EFECE6;--line3:#F1EEE8;--border:#D9D4CA;
+  --mute:#8A867E;--sub:#5E5B55;--faint:#B5B0A6;--off:#C9C4BA;--press:#EFECE6;
+  --serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong",serif;
+  --sans:"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:#E9E6DF;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;text-align:inherit}
+[hidden]{display:none!important}
+@keyframes dcpulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+@keyframes dcdot{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+#app{position:relative;max-width:430px;margin:0 auto;height:100vh;height:100dvh;background:var(--paper);display:flex;flex-direction:column;overflow:hidden;padding-top:env(safe-area-inset-top,0px)}
+@media (min-width:600px){#app{width:390px;height:min(844px,calc(100dvh - 48px));margin:24px auto;border-radius:28px;box-shadow:0 30px 60px rgba(0,0,0,.18)}}
+#view{flex:1;min-height:0;display:flex;flex-direction:column}
+.page{flex:1;min-height:0;overflow-y:auto;padding:18px 22px 24px}
+
+/* 首页 */
+.home-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 22px;position:relative;z-index:5}
+.hello{font:700 26px/1.3 var(--serif);margin:0;text-wrap:pretty}
+.picker{position:relative;flex:none}
+.pill{display:flex;align-items:center;gap:6px;height:40px;padding:0 12px 0 14px;border-radius:999px;border:1px solid var(--border);background:#fff;max-width:150px}
+.pill:active{background:var(--press)}
+.pill-name{font:600 15px var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.caret{font-size:11px;color:var(--mute)}
+.menu{position:absolute;right:0;top:48px;width:230px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 30px rgba(0,0,0,.14);overflow:hidden}
+.menu-h{padding:12px 16px 6px;font-size:13px;color:var(--mute)}
+.menu-item{display:flex;width:100%;align-items:center;gap:10px;padding:12px 16px}
+.menu-item:active,.menu-foot button:active{background:var(--paper)}
+.mi-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.mi-name{font:600 16px var(--serif)}
+.mi-sub{font-size:13px;color:var(--mute)}
+.check{color:var(--accent);font-size:15px}
+.menu-foot{display:flex;border-top:1px solid var(--line2)}
+.menu-foot button{flex:1;padding:13px 0;text-align:center;font-size:15px}
+.menu-foot button:first-child{font-weight:600;border-right:1px solid var(--line2)}
+.menu-foot button:last-child{color:var(--sub)}
+
+.shelf-wrap{position:relative;margin:0 -22px}
+.shelf{display:flex;align-items:flex-end;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px calc(50% - 115px) 0;height:368px;scrollbar-width:none;position:relative;z-index:1}
+.shelf::-webkit-scrollbar{display:none}
+.slot{flex:none;width:230px;display:flex;justify-content:center;scroll-snap-align:center;cursor:pointer}
+.book{width:210px;height:300px;transform-origin:bottom center;transition:transform .3s,opacity .3s;position:relative;border-radius:4px 12px 12px 4px;background:var(--cover);
+  box-shadow:inset 14px 0 0 rgba(0,0,0,.14),inset 16px 0 0 rgba(255,255,255,.18),5px 0 0 -1px #F4F0E8,6px 0 0 -1px #D6D0C4,12px 14px 22px rgba(0,0,0,.22);
+  padding:18px 18px 20px 30px;display:flex;flex-direction:column;color:#fff}
+.book-art{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none}
+.book-art>div{position:absolute;inset:0}
+.poster{background-size:cover}
+.shade{background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 26%,rgba(0,0,0,0) 46%,rgba(0,0,0,.78) 100%);mix-blend-mode:multiply}
+.tint{background:var(--cover);mix-blend-mode:color}
+.book-art>.spine{right:auto;width:14px;background:rgba(0,0,0,.28);box-shadow:2px 0 0 rgba(255,255,255,.2)}
+.book-text{position:relative;flex:1;display:flex;flex-direction:column}
+.book-phase{font-size:13px;font-weight:600;opacity:.85;letter-spacing:.04em}
+.book-name{margin-top:auto;font:700 23px/1.3 var(--serif);text-wrap:pretty}
+.book-drama{font-size:13px;opacity:.8;margin-top:8px;border-top:1px solid rgba(255,255,255,.35);padding-top:8px}
+.c-web{--cover:#C66846}.c-job{--cover:#508DB7}.c-press{--cover:#3959A6}.c-line{--cover:#C29647}.c-bio{--cover:#448061}
+@supports (color:oklch(0 0 0)){
+  .c-web{--cover:oklch(.62 .13 40)}.c-job{--cover:oklch(.62 .09 240)}.c-press{--cover:oklch(.48 .13 265)}.c-line{--cover:oklch(.7 .11 80)}.c-bio{--cover:oklch(.55 .08 160)}
+}
+.plank{height:14px;background:#3A2F27;margin-top:-4px;box-shadow:0 8px 14px rgba(0,0,0,.18)}
+.dots{display:flex;justify-content:center;gap:7px;margin-top:16px}
+.dot{height:6px;width:6px;border-radius:9px;background:var(--border);transition:width .2s}
+.dot.on{width:20px;background:var(--ink)}
+.active{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;text-align:center}
+.when{font-size:14px;color:var(--accent);font-weight:600}
+.short{font-size:17px;line-height:1.5;color:var(--sub);max-width:280px;text-wrap:pretty}
+.open-btn{display:flex;margin:18px auto 0;width:200px;height:54px;border-radius:999px;background:var(--ink);color:var(--paper);align-items:center;justify-content:center;font-size:18px;font-weight:600}
+.open-btn:active{transform:scale(.97)}
+
+/* 收藏 / 话术卡 */
+.title{font:700 28px var(--serif);margin:6px 0}
+.lead{font-size:16px;color:var(--sub);margin-bottom:20px;line-height:1.5}
+.list{display:flex;flex-direction:column;gap:12px}
+.saved-item{width:100%;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;gap:14px;align-items:center}
+.saved-item:active{background:var(--paper)}
+.glyph-solid{width:46px;height:46px;flex:none;background:var(--ink);color:var(--paper);border-radius:12px;display:flex;align-items:center;justify-content:center;font:700 22px var(--serif)}
+.si-text{flex:1;display:flex;flex-direction:column;gap:3px}
+.si-title{font-size:18px;font-weight:600}
+.si-meta{font-size:14px;color:var(--mute)}
+.chev{color:var(--faint);font-size:20px}
+.empty{font-size:16px;color:var(--mute);line-height:1.6;padding:24px 0;text-align:center}
+.phrase{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.phrase-l{font-size:14px;color:var(--accent);font-weight:600}
+.phrase-t{font:500 18px/1.55 var(--serif)}
+.phrase-r{display:flex;justify-content:flex-end}
+.copy{font-size:15px;padding:8px 14px;border-radius:999px;border:1px solid var(--line)}
+.copy:active{background:var(--paper)}
+
+.tabs{flex:none;display:flex;border-top:1px solid var(--line);background:var(--paper);padding:8px 12px max(14px,calc(8px + var(--safe-b)))}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0}
+.tab span{font-size:16px;color:var(--mute)}
+.tab i{width:5px;height:5px;border-radius:9px}
+.tab.on span{font-weight:700;color:var(--ink)}
+.tab.on i{background:var(--accent)}
+
+/* 功能页：五个功能共用一套 */
+.topbar{flex:none;display:flex;align-items:center;padding:6px 14px 10px;border-bottom:1px solid var(--line)}
+.back{font-size:17px;padding:8px 10px;min-width:64px}
+.tb-title{flex:1;text-align:center;font:700 18px var(--serif)}
+.tb-phase{min-width:64px;text-align:right;font-size:14px;color:var(--mute);padding-right:6px}
+.convo{flex:1;min-height:0;overflow-y:auto;padding:18px 20px 20px;display:flex;flex-direction:column;gap:16px}
+.convo>*{flex:none}
+.desc{display:flex;gap:12px;align-items:flex-start}
+.glyph-sm{width:30px;height:30px;flex:none;border:1px solid var(--faint);border-radius:8px;display:flex;align-items:center;justify-content:center;font:700 15px var(--serif);color:var(--mute)}
+.desc-t{font-size:15px;line-height:1.55;color:var(--mute);text-wrap:pretty;padding-top:4px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.kv{display:flex;flex-direction:column;gap:4px}
+.kv+.kv{border-top:1px solid var(--line2);padding-top:14px}
+.k{font-size:14px;color:var(--mute)}
+.v{font-size:18px;font-weight:600}
+.v-ex{font:500 18px/1.55 var(--serif)}
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.btn{width:100%;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
+.solid{background:var(--ink);color:var(--paper)}
+.solid:active{transform:scale(.98)}
+.outline{border:1.5px solid var(--ink)}
+.outline:active{background:var(--press)}
+.msg-ai{display:flex;flex-direction:column;gap:6px;max-width:92%}
+.who{font-size:13px;color:var(--mute)}
+.msg-ai .txt{font:500 18px/1.65 var(--serif);color:var(--ink)}
+.msg-user{align-self:flex-end;max-width:82%;background:var(--ink);color:var(--paper);border-radius:18px 18px 4px 18px;padding:12px 15px;font-size:17px;line-height:1.55}
+.thinking{display:flex;align-items:center;gap:10px;font-size:16px;color:var(--sub)}
+.tdots{display:flex;gap:5px}
+.tdots i{width:7px;height:7px;border-radius:9px;background:var(--accent);animation:dcdot 1.2s infinite}
+.tdots i:nth-child(2){animation-delay:.2s}.tdots i:nth-child(3){animation-delay:.4s}
+.card{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.05)}
+.card-h{padding:16px 18px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;align-items:baseline}
+.card-t{font:700 19px var(--serif)}
+.card-tag{font-size:14px;color:var(--accent)}
+.card-b{padding:6px 18px 8px;display:flex;flex-direction:column}
+.sec{padding:12px 0;border-bottom:1px solid var(--line3);display:flex;flex-direction:column;gap:8px}
+.sec-t{font-size:14px;font-weight:600;color:var(--accent)}
+.item{display:flex;gap:10px;font-size:17px;line-height:1.55}
+.item>span:first-child{color:var(--faint)}
+.item>span:last-child{flex:1;text-wrap:pretty}
+.card-n{padding:10px 18px 16px;font-size:14px;color:var(--mute);line-height:1.5}
+.webwrap{display:flex;flex-direction:column;gap:10px}
+.webframe{border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+.web-h{padding:8px 14px;background:rgba(0,0,0,.04);font:12px ui-monospace,Menlo,monospace;color:var(--mute);display:flex;justify-content:space-between}
+.web-b{padding:20px 18px 22px;display:flex;flex-direction:column;gap:14px}
+.web-title{font:700 21px/1.35 var(--serif)}
+.web-q{font-size:17px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{width:100%;padding:12px 14px;border-radius:12px;background:#fff;border:1.5px solid;font-size:16px}
+.opt:active{opacity:.7}
+.web-done{background:#fff;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.web-done b{font-size:14px;font-weight:600}
+.web-role{font:700 26px var(--serif)}
+.web-rd{font-size:16px;line-height:1.55;color:var(--sub)}
+.replay{align-self:flex-start;margin-top:4px;font-size:15px}
+.sign{font:500 15px var(--serif);text-align:right}
+.web-log{font-size:14px;color:var(--mute)}
+.mods{display:flex;flex-wrap:wrap;gap:8px}
+.mod{font-size:15px;padding:9px 14px;border-radius:999px;border:1px solid var(--border);background:#fff}
+.mod:active{background:var(--press)}
+
+.bar{flex:none;border-top:1px solid var(--line);background:var(--paper);padding:12px 18px max(16px,calc(10px + var(--safe-b)));position:relative}
+.row{display:flex;gap:10px;align-items:center}
+.bb{flex:1;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
+.sec-btn{width:76px;height:60px;flex:none;border-radius:16px;border:1.5px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;text-align:center}
+.mic{flex:1;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:600;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;position:relative}
+.mic-dot{width:10px;height:10px;border-radius:9px}
+.pulse{position:absolute;inset:0;border-radius:16px;border:2px solid var(--accent);animation:dcpulse 1s ease-out infinite;pointer-events:none}
+
+/* 底部弹层：新增 / 管理 */
+.scrim{position:absolute;inset:0;background:rgba(29,28,26,.35);z-index:20}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:21;background:var(--paper);border-radius:24px 24px 0 0;padding:10px 22px max(22px,calc(16px + var(--safe-b)));display:flex;flex-direction:column;gap:16px;max-height:80%;overflow-y:auto}
+.grab{align-self:center;flex:none;width:40px;height:5px;border-radius:9px;background:var(--border)}
+.sheet-h{display:flex;justify-content:space-between;align-items:center}
+.sheet-t{font:700 21px var(--serif)}
+.sheet-x{font-size:16px;color:var(--sub);padding:8px}
+.form{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field span{font-size:14px;color:var(--mute)}
+.field input{width:100%;height:50px;border-radius:12px;border:1px solid var(--border);background:#fff;padding:0 14px;font:500 17px var(--sans);color:var(--ink);outline:none}
+.field input:focus{border-color:var(--ink)}
+.hint{font-size:14px;color:var(--mute);line-height:1.5}
+.save-drama{color:var(--paper)}
+.mlist{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mrow{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line2)}
+.mrow .mi-name{font-size:17px}
+.mrow .mi-sub{font-size:14px}
+.cur{font-size:13px;color:var(--accent)}
+.chip{font-size:15px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);cursor:pointer;white-space:nowrap}
+
+.toast{position:absolute;left:50%;bottom:120px;transform:translateX(-50%);z-index:30;background:var(--ink);color:var(--paper);font-size:16px;padding:12px 18px;border-radius:999px;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+</style>
+</head>
+<body>
+<div id="app"><div id="view"></div><div id="toast" class="toast" hidden></div></div>
+<script>
+// ── 内容（示例脚本，台词/问题/角色资料都需要团队核对） ──
+const TOOLS = {
+  web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '说一句想做什么，AI 当场做出来',
+    desc: '说一句想做什么，AI 当场做出一个能点着玩的网页。', get: '一个粉丝测试页，可以接着说怎么改',
+    example: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。',
+    script: [{ u: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。' }, { a: '做好了，可以点着试试。想改哪里，按住直接说。' }], kind: 'web' },
+  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '拿到台词时', short: '拍一句台词，看意思、典故和礼数',
+    desc: '拍一句看不懂的台词，看白话意思、典故，和古人这时候怎么做。', get: '三张小卡：意思 · 典故 · 礼数',
+    example: '多谢姑娘救命之恩，来日必当结草衔环以报。', secondary: '拍一句',
+    script: [{ u: '多谢姑娘救命之恩，来日必当结草衔环以报。' }, { a: '这句看懂了。“结草衔环”是报恩的老说法，我分成三张卡给你。' }],
+    card: { title: '台词速懂', tag: '结草衔环', note: '读音以台词老师为准，典故请团队核对。', sections: [
+      { t: '白话意思', items: ['谢谢你救了我的命，以后一定拼尽全力报答你。'] },
+      { t: '典故出处', items: ['结草：《左传》，魏颗没让父亲的妾殉葬，后来老人结草绊倒敌将报恩。', '衔环：杨宝救了一只黄雀，黄雀衔来白环相报。'] },
+      { t: '这时候怎么做', items: ['说话时行礼，女子福身、男子作揖。', '语气郑重，说到“来日”时可以抬眼看对方。'] }] } },
+  job: { name: '职业功课', glyph: '职', phase: '进组前', when: '进组前', short: 'AI 扮成这一行的人，和你聊十分钟',
+    desc: '选一个职业，AI 扮成这一行的人和你聊，聊完整理成功课卡。', get: '一张职业功课卡：说法 · 动作 · 一天',
+    example: '律师 ·《美人余》余梦',
+    script: [{ a: '你好，我做了十年民商事诉讼律师。想了解这一行的什么？' }, { u: '律师平时说话有什么习惯？' },
+      { a: '先说结论，再讲理由。我们很少说“我觉得”，更常说“根据……”。跟客户说话会放慢，跟对方律师会更短。' }, { u: '那站着的时候呢？' },
+      { a: '开庭时站得很直，手放在桌面材料上，不插兜、不抱胸。翻材料很利落，像随时能找到那一页。' }],
+    card: { title: '职业功课卡', tag: '律师', note: '专业细节以剧组顾问或真实从业者为准。', sections: [
+      { t: '常用说法', items: ['“根据合同第几条……”', '“这个问题我需要先确认事实。”', '“我们的诉求有三点。”'] },
+      { t: '习惯动作', items: ['开庭时站直，手放在材料上', '翻材料快且准', '听对方说话时边听边记'] },
+      { t: '一天怎么过', items: ['早上看卷宗、回客户消息', '下午见客户或开庭', '晚上写文书，经常加班'] }] } },
+  bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '进组前', short: '回答问题，得到一份人物小传',
+    desc: 'AI 一次只问一个问题，你用说话回答，最后整理成小传。', get: '一份只用你说过的话写成的小传',
+    example: '余梦 · 全职太太，后来成为律师', secondary: '跳过',
+    script: [{ a: '第 1 题：余梦小时候，家里谁对她影响最大？' }, { u: '应该是妈妈，妈妈一直跟她说女孩子要靠自己。' },
+      { a: '第 2 题：她结婚的时候，最想要的是什么？' }, { u: '一个安稳的家，她觉得那就够了。' },
+      { a: '第 3 题：她现在最怕什么？' }, { u: '怕自己再一次什么都没有。' }],
+    card: { title: '人物小传', tag: '余梦', note: '只用了你说过的话，没有替你编。还剩 5 题，可以随时接着答。', sections: [
+      { t: '成长经历', items: ['妈妈一直告诉她，女孩子要靠自己。'] },
+      { t: '想要什么', items: ['结婚时只想要一个安稳的家。'] },
+      { t: '怕什么', items: ['怕自己再一次什么都没有。'] },
+      { t: '和别人的关系', items: ['还没回答'] }] } },
+  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '去发布会的车上', short: 'AI 扮记者提问，帮你理成要点',
+    desc: 'AI 扮记者问你问题，你随便说，它帮你理成两三个要点。', get: '每个问题 2–3 个要点',
+    example: '《美人余》发布会 · 5 个问题', secondary: '再问一遍',
+    script: [{ a: '第 1 题：这次署名改成“李雪（李一桐）”，是有什么考虑吗？' }, { u: '其实李雪是我的本名，想让大家认识更完整的我，也算一个新的开始。' },
+      { a: '第 2 题：余梦从全职太太变成律师，你觉得最难演的是哪一段？' }, { u: '是她刚出去工作那段，她心里很慌，但又不能让别人看出来。' }],
+    card: { title: '采访要点', tag: '《美人余》发布会', note: '口径以宣传团队为准。不打分，只整理你说过的话。', sections: [
+      { t: '署名改为“李雪（李一桐）”', items: ['李雪是我的本名', '想让大家认识更完整的我', '一个新的开始'] },
+      { t: '余梦最难演的一段', items: ['刚出去工作的那段', '心里慌，表面要稳'] }] } }
+};
+// 书架顺序：进组前 → 拍戏期 → 宣传期 → 个人表达
+const ORDER = ['job', 'bio', 'line', 'press', 'web'];
+const SLOT = 230;
+const QUIZ = [
+  { q: '周末你更想……', f: '周末突然多出一天假，你第一反应？', o: ['在家看书', '约朋友出门', '一个人去旅行'] },
+  { q: '遇到难题，你会……', f: '老板临时甩来一个大难题，你……', o: ['先自己想办法', '找人商量', '睡一觉再说'] },
+  { q: '你更喜欢哪种衣服？', f: '明天拍定妆照，你会偷偷选……', o: ['利落的西装', '温柔的长裙', '舒服的卫衣'] },
+  { q: '朋友眼里的你是……', f: '如果朋友给你起外号，会是……', o: ['靠谱', '好玩', '安静'] },
+  { q: '你最想拥有的能力？', f: '给你一个超能力，你选……', o: ['说服别人', '让人开心', '看透人心'] }
+];
+const ROLES = [
+  { n: '余梦', d: '外柔内刚，认准了就一步步走出自己的路。' },
+  { n: '孟钰', d: '心里有主意，嘴上不多说，关键时候最靠得住。' },
+  { n: '陈雀儿', d: '机灵爱笑，走到哪里都能把气氛点亮。' }
+];
+const MODS = ['改成淡蓝色', '题目再有趣一点', '加上我的签名'];
+const PHRASES = [
+  { label: '台词速懂', text: '这句台词什么意思？古人这时候会怎么做？' },
+  { label: '职业功课', text: '我要演一个律师，你扮律师和我聊十分钟，再告诉我律师说话和站姿有什么习惯。' },
+  { label: '人物小传', text: '我要演余梦，你一次问我一个问题，问完帮我整理成小传，只用我说过的话。' },
+  { label: '采访陪练', text: '今天是《美人余》的发布会，你扮记者问我五个问题。' },
+  { label: '整理要点', text: '把我刚才说的，整理成两三个要点。' },
+  { label: '做网页', text: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。' }
+];
+const DEFAULT_DRAMAS = [
+  { name: '美人余', role: '余梦', job: '律师', poster: 'posters/meirenyu.jpg', pos: '45% 45%' },
+  { name: '我不是大师', role: '江飞燕', job: '戏班花旦', poster: 'posters/wobushidashi.jpg', pos: '30% 20%' }
+];
+
+// ── 小工具 ──
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// 收藏和戏单只存在这台手机里（前缀和线上版 ytlab. 分开，互不影响）
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('ytlab.v2.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('ytlab.v2.' + k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+
+// ── 状态 ──
+const S = {
+  screen: 'home', from: 'home', toolId: 'web', stage: 'intro', mode: null, msgs: [], step: 0, waiting: false, recording: false,
+  saved: store.get('saved', [{ tool: 'job', title: '职业功课卡 · 律师', ts: Date.now() - 864e5 }]),
+  card: 0, menu: false, sheet: null, draft: { name: '', role: '', job: '' },
+  dramas: store.get('dramas', DEFAULT_DRAMAS), dramaIdx: store.get('dramaIdx', 0),
+  savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: ''
+};
+if (!Array.isArray(S.dramas) || !S.dramas.length) S.dramas = DEFAULT_DRAMAS.slice();
+if (!(S.dramaIdx >= 0 && S.dramaIdx < S.dramas.length)) S.dramaIdx = 0;
+
+let timers = [], iv = 0, toastT = 0;
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+function clear() { timers.forEach(clearTimeout); timers = []; clearInterval(iv); }
+function set(patch) { Object.assign(S, patch); render(); }
+function persistDramas() {
+  const ok = store.set('dramas', S.dramas);
+  store.set('dramaIdx', S.dramaIdx);
+  return ok;
+}
+function flash(msg) {
+  const el = $('#toast');
+  clearTimeout(toastT); el.textContent = msg; el.hidden = false;
+  toastT = setTimeout(() => { el.hidden = true; }, 1600);
+}
+const drama = () => S.dramas[S.dramaIdx] || S.dramas[0];
+// 换戏后，把示例里的剧名 / 角色 / 职业换成当前这部戏的
+function T(id) {
+  const d = drama();
+  if (!d || (d.name === '美人余' && d.role === '余梦' && d.job === '律师')) return TOOLS[id];
+  return JSON.parse(JSON.stringify(TOOLS[id]).split('美人余').join(d.name).split('余梦').join(d.role).split('律师').join(d.job));
+}
+function when(ts) {
+  const d = new Date(ts), now = new Date(), day = 864e5;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (now - d < 36e5) return '刚刚';
+  if (ts >= start) return '今天 ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  if (ts >= start - day) return '昨天';
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日';
+}
+
+// ── 对话流程（演示脚本） ──
+function stream(role, text, done) {
+  S.msgs.push({ role, text: '' }); render();
+  let i = 0; clearInterval(iv);
+  iv = setInterval(() => {
+    i += role === 'a' ? 2 : 3;
+    const n = S.msgs.length - 1;
+    S.msgs[n].text = text.slice(0, i);
+    const el = document.querySelector('[data-msg="' + n + '"]');
+    if (el) el.textContent = S.msgs[n].text;
+    scrollDown();
+    if (i >= text.length) { clearInterval(iv); later(done, 380); }
+  }, 38);
+}
+function run() {
+  const t = T(S.toolId), i = S.step;
+  if (i >= t.script.length) {
+    set({ stage: 'thinking', waiting: false });
+    later(() => set({ stage: 'result' }), t.kind === 'web' ? 1500 : 1100);
+    return;
+  }
+  const st = t.script[i];
+  const next = () => { S.step = i + 1; run(); };
+  if (st.a) stream('a', st.a, next);
+  else if (S.mode === 'auto') later(() => stream('u', st.u, next), 650);
+  else set({ waiting: true });
+}
+function userSay(text) {
+  if (!S.waiting) return;
+  const t = T(S.toolId), i = S.step;
+  S.waiting = false;
+  stream('u', text || t.script[i].u, () => { S.step = i + 1; run(); });
+}
+function start(mode) {
+  clear();
+  Object.assign(S, { mode, stage: 'session', msgs: [], step: 0, waiting: false, savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: '' });
+  run();
+}
+function openTool(id, stage, fromHistory) {
+  clear();
+  set({ screen: 'tool', from: S.screen === 'tool' ? S.from : S.screen, toolId: id, stage: stage || 'intro', mode: 'auto', msgs: [], step: 0, waiting: false,
+    recording: false, menu: false, savedNow: !!stage, webQ: 0, webScore: 0, mods: [], webLog: '' });
+  if (!fromHistory) try { history.pushState({ tool: id }, '', '#' + id); } catch (e) {}
+}
+function closeTool() { clear(); set({ screen: S.from || 'home', recording: false }); }
+function back() {
+  if (history.state && history.state.tool) { try { history.back(); return; } catch (e) {} }
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  closeTool();
+}
+function applyMod(label) {
+  const m = label || MODS.find(x => !S.mods.includes(x)); if (!m) return;
+  set({ mods: [...S.mods, m], webLog: '你说：“' + m + '”，已经改好了。' });
+}
+const canTalk = () => (S.stage === 'session' && S.waiting) || (S.stage === 'result' && T(S.toolId).kind === 'web' && S.mods.length < MODS.length);
+function micDown(e) { if (!canTalk()) return; e.preventDefault(); set({ recording: true }); }
+function micUp() {
+  if (!S.recording) return;
+  set({ recording: false });
+  if (S.stage === 'result') applyMod(); else userSay();
+}
+function secondary() {
+  const t = T(S.toolId);
+  if (!S.waiting) return;
+  if (S.toolId === 'line') userSay('📷 拍了一句：' + t.example);
+  else if (S.toolId === 'bio') userSay('（这题先跳过）');
+  else if (S.toolId === 'press') { set({ waiting: false }); stream('a', '换个问法：' + t.script[S.step - 1].a.replace(/^第 \d 题：/, ''), () => set({ waiting: true })); }
+}
+function save() {
+  if (S.savedNow) return;
+  const t = T(S.toolId);
+  S.saved = [...S.saved, { tool: S.toolId, title: t.card ? t.card.title + ' · ' + t.card.tag : '粉丝测试页', ts: Date.now() }].slice(-50);
+  store.set('saved', S.saved);
+  set({ savedNow: true });
+  flash('已存进“我的收藏”');
+}
+function copyText(text) {
+  const fallback = () => {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.remove();
+  };
+  try { navigator.clipboard.writeText(text).catch(fallback); } catch (e) { fallback(); }
+  flash('已复制，可以粘贴给任何 AI');
+}
+// 海报缩到 640 宽再存，免得手机存储放不下
+function readPoster(file, cb) {
+  const r = new FileReader();
+  r.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const w = Math.min(640, img.width), h = Math.round(img.height * w / img.width);
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      let url; try { url = c.toDataURL('image/jpeg', .8); } catch (e) { url = r.result; }
+      cb(url);
+    };
+    img.onerror = () => cb(r.result);
+    img.src = r.result;
+  };
+  r.readAsDataURL(file);
+}
+
+// ── 界面 ──
+function bookView(id, i, d) {
+  const t = TOOLS[id], on = i === S.card;
+  return `<div class="slot" data-act="card" data-i="${i}">
+    <div class="book c-${id}" style="transform:scale(${on ? 1 : .84});opacity:${on ? 1 : .7}">
+      <div class="book-art">
+        ${d.poster ? `<div class="poster" style="background-image:url('${esc(d.poster)}');background-position:${esc(d.pos || 'center 25%')}"></div>` : ''}
+        <div class="shade"></div>
+        <div class="tint" style="opacity:${d.poster ? .22 : 0}"></div>
+        <div class="spine"></div>
+      </div>
+      <div class="book-text">
+        <span class="book-phase">${esc(t.phase)}</span>
+        <span class="book-name">${esc(t.name)}</span>
+        <span class="book-drama">《${esc(d.name)}》· ${esc(d.role)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+function activeView() {
+  const id = ORDER[S.card] || 'web', t = T(id);
+  return `<div class="active"><span class="when">${esc(t.when)}</span><span class="short">${esc(t.short)}</span></div>
+    <button class="open-btn" data-act="open" data-id="${id}">翻开这本</button>`;
+}
+function homeView() {
+  const d = drama();
+  const menu = !S.menu ? '' : `<div class="menu">
+      <div class="menu-h">正在准备的戏</div>
+      ${S.dramas.map((x, i) => `<button class="menu-item" data-act="pick" data-i="${i}">
+        <span class="mi-text"><span class="mi-name">《${esc(x.name)}》</span><span class="mi-sub">${esc(x.role)} · ${esc(x.job)}</span></span>
+        <span class="check">${i === S.dramaIdx ? '✓' : ''}</span></button>`).join('')}
+      <div class="menu-foot"><button data-act="add">＋ 新增</button><button data-act="manage">管理</button></div>
+    </div>`;
+  return `<div class="page">
+    <div class="home-head">
+      <h1 class="hello">今天想用 AI<br>做点什么？</h1>
+      <div class="picker">
+        <button class="pill" data-act="menu"><span class="pill-name">《${esc(d.name)}》</span><span class="caret">▼</span></button>
+        ${menu}
+      </div>
+    </div>
+    <div class="shelf-wrap">
+      <div class="shelf">${ORDER.map((id, i) => bookView(id, i, d)).join('')}</div>
+      <div class="plank"></div>
+    </div>
+    <div class="dots">${ORDER.map((_, i) => `<span class="dot${i === S.card ? ' on' : ''}"></span>`).join('')}</div>
+    <div id="active">${activeView()}</div>
+  </div>`;
+}
+function savedView() {
+  const items = S.saved.slice().reverse();
+  return `<div class="page">
+    <h1 class="title">我的收藏</h1>
+    <div class="lead">只存在这台手机里</div>
+    <div class="list">${items.length ? items.map(x => `<button class="saved-item" data-act="openSaved" data-tool="${esc(x.tool)}">
+        <span class="glyph-solid">${esc(TOOLS[x.tool].glyph)}</span>
+        <span class="si-text"><span class="si-title">${esc(x.title)}</span><span class="si-meta">${esc(TOOLS[x.tool].name)} · ${when(x.ts)}</span></span>
+        <span class="chev">›</span></button>`).join('') : '<div class="empty">还没有收藏。结果出来后点“收藏”，就会存在这里。</div>'}</div>
+  </div>`;
+}
+function phrasesView() {
+  return `<div class="page">
+    <h1 class="title">随身话术卡</h1>
+    <div class="lead">离开这里，也能照着对任何 AI 说</div>
+    <div class="list">${PHRASES.map((p, i) => `<div class="phrase">
+        <span class="phrase-l">${esc(p.label)}</span>
+        <span class="phrase-t">“${esc(p.text)}”</span>
+        <div class="phrase-r"><button class="copy" data-act="copy" data-i="${i}">复制</button></div>
+      </div>`).join('')}</div>
+  </div>`;
+}
+function tabsView() {
+  return `<nav class="tabs">${[['home', '体验'], ['saved', '我的收藏'], ['phrases', '话术卡']].map(([k, l]) =>
+    `<button class="tab${S.screen === k ? ' on' : ''}" data-act="tab" data-k="${k}"><span>${l}</span><i></i></button>`).join('')}</nav>`;
+}
+function webView() {
+  const fun = S.mods.includes('题目再有趣一点'), blue = S.mods.includes('改成淡蓝色');
+  const bg = blue ? '#E6EFF8' : '#F2EFE9', accent = blue ? '#2F6FB0' : '#B8432B', ink = blue ? '#14304D' : '#1D1C1A';
+  const q = QUIZ[Math.min(S.webQ, 4)], role = ROLES[S.webScore % 3];
+  const asking = S.webQ < 5;
+  return `<div class="webwrap">
+    <div class="webframe" style="background:${bg}">
+      <div class="web-h"><span>预览 · 只在这里能看到</span><span>${asking ? (S.webQ + 1) + ' / 5' : '完成'}</span></div>
+      <div class="web-b">
+        <span class="web-title" style="color:${ink}">你像一桐的哪个角色？</span>
+        ${asking ? `<span class="web-q" style="color:${ink}">${esc(fun ? q.f : q.q)}</span>
+          <div class="opts">${q.o.map((o, i) => `<button class="opt" data-act="webPick" data-i="${i}" style="border-color:${accent};color:${ink}">${esc(o)}</button>`).join('')}</div>`
+        : `<div class="web-done"><b style="color:${accent}">你最像</b><span class="web-role" style="color:${ink}">${esc(role.n)}</span>
+            <span class="web-rd">${esc(role.d)}</span><button class="replay" data-act="replay" style="color:${accent}">再测一次</button></div>`}
+        ${S.mods.includes('加上我的签名') ? `<span class="sign" style="color:${accent}">— 李雪（李一桐）</span>` : ''}
+      </div>
+    </div>
+    <span class="web-log">${esc(S.webLog || '点选项试玩，或者告诉它怎么改：')}</span>
+    <div class="mods">${MODS.filter(m => !S.mods.includes(m)).map(m => `<button class="mod" data-act="mod" data-m="${esc(m)}">“${esc(m)}”</button>`).join('')}</div>
+  </div>`;
+}
+function toolView() {
+  const t = T(S.toolId), isWeb = t.kind === 'web', talk = canTalk();
+  const who = S.toolId === 'press' ? 'AI 记者' : S.toolId === 'job' ? 'AI ' + drama().job : 'AI';
+  const msgs = S.msgs.map((m, i) => m.role === 'a'
+    ? `<div class="msg-ai"><span class="who">${esc(who)}</span><span class="txt" data-msg="${i}">${esc(m.text)}</span></div>`
+    : `<div class="msg-user" data-msg="${i}">${esc(m.text)}</div>`).join('');
+  const card = t.card || { sections: [] };
+  let label = '按住 说话';
+  if (S.recording) label = '松开 发送';
+  else if (S.stage === 'intro') label = '先选上面一种方式';
+  else if (S.stage === 'thinking') label = '正在整理…';
+  else if (S.stage === 'session' && !S.waiting) label = S.mode === 'auto' ? '正在演示…' : 'AI 在说…';
+  else if (S.stage === 'session' && S.waiting) label = '按住 说话回答';
+  else if (S.stage === 'result' && isWeb) label = talk ? '按住 说要怎么改' : '都改好了';
+  const result = S.stage === 'result';
+  const bar = result && !isWeb
+    ? `<div class="row"><button class="bb outline" data-act="restart">再来一次</button><button class="bb solid" data-act="save">${S.savedNow ? '已收藏' : '收藏'}</button></div>`
+    : `<div class="row">
+        ${t.secondary && !result ? `<button class="sec-btn" data-act="secondary" style="opacity:${S.waiting ? 1 : .4}">${esc(t.secondary)}</button>` : ''}
+        <div class="mic" data-mic style="background:${S.recording ? '#B8432B' : talk ? '#1D1C1A' : '#E4E0D8'};color:${talk || S.recording ? '#F5F3EE' : '#8A867E'}">
+          ${S.recording ? '<span class="pulse"></span>' : ''}<span class="mic-dot" style="background:${S.recording ? '#fff' : talk ? '#B8432B' : '#B5B0A6'}"></span><span>${label}</span>
+        </div>
+      </div>`;
+  return `<div class="topbar"><button class="back" data-act="back">‹ 返回</button><span class="tb-title">${esc(t.name)}</span><span class="tb-phase">${esc(t.phase)}</span></div>
+    <div class="convo" data-scroll>
+      <div class="desc"><span class="glyph-sm">${esc(t.glyph)}</span><span class="desc-t">${esc(t.desc)}</span></div>
+      ${S.stage === 'intro' ? `<div class="panel">
+        <div class="kv"><span class="k">你会得到</span><span class="v">${esc(t.get)}</span></div>
+        <div class="kv"><span class="k">已经帮你填好的例子</span><span class="v-ex">${esc(t.example)}</span></div>
+        <div class="btns"><button class="btn solid" data-act="auto">直接试试</button><button class="btn outline" data-act="self">换我来说</button></div>
+      </div>` : ''}
+      ${msgs}
+      ${S.stage === 'thinking' ? '<div class="thinking"><span class="tdots"><i></i><i></i><i></i></span><span>正在整理成卡片</span></div>' : ''}
+      ${result && !isWeb ? `<div class="card">
+        <div class="card-h"><span class="card-t">${esc(card.title)}</span><span class="card-tag">${esc(card.tag)}</span></div>
+        <div class="card-b">${card.sections.map(sec => `<div class="sec"><span class="sec-t">${esc(sec.t)}</span>
+          ${sec.items.map(it => `<div class="item"><span>·</span><span>${esc(it)}</span></div>`).join('')}</div>`).join('')}</div>
+        <div class="card-n">${esc(card.note)}</div>
+      </div>` : ''}
+      ${result && isWeb ? webView() : ''}
+    </div>
+    <div class="bar">${bar}</div>`;
+}
+function sheetView() {
+  const ok = S.draft.name.trim() && S.draft.role.trim();
+  const body = S.sheet === 'add'
+    ? `<div class="form">
+        ${[['name', '剧名', '例如：书卷一梦'], ['role', '我演的角色', '例如：江飞燕'], ['job', '角色的职业', '例如：戏班花旦']].map(([k, l, ph]) =>
+          `<label class="field"><span>${l}</span><input data-field="${k}" value="${esc(S.draft[k])}" placeholder="${ph}"></label>`).join('')}
+        <span class="hint">保存后，五本书都会换成这部戏的内容。</span>
+        <button class="btn save-drama" data-act="saveDrama" style="background:${ok ? '#1D1C1A' : '#C9C4BA'}">保存并切换</button>
+      </div>`
+    : `<div class="mlist">${S.dramas.map((d, i) => `<div class="mrow">
+          <span class="mi-text"><span class="mi-name">《${esc(d.name)}》</span><span class="mi-sub">${esc(d.role)} · ${esc(d.job)}</span></span>
+          <span class="cur">${i === S.dramaIdx ? '当前' : ''}</span>
+          <label class="chip">${d.poster ? '换海报' : '传海报'}<input type="file" accept="image/*" data-upload="${i}" hidden></label>
+          <button class="chip" data-act="remove" data-i="${i}" style="color:${S.dramas.length > 1 ? '#B8432B' : '#C9C4BA'}">删除</button>
+        </div>`).join('')}</div>
+      <button class="btn outline" data-act="add">＋ 新增一部戏</button>`;
+  return `<div class="scrim" data-act="close"></div>
+    <div class="sheet">
+      <span class="grab"></span>
+      <div class="sheet-h"><span class="sheet-t">${S.sheet === 'add' ? '新增一部戏' : '管理我的戏'}</span><button class="sheet-x" data-act="close">关闭</button></div>
+      ${body}
+    </div>`;
+}
+function scrollDown() { const el = $('[data-scroll]'); if (el) el.scrollTop = el.scrollHeight; }
+function render() {
+  let h = '';
+  if (S.screen === 'tool') h = toolView();
+  else h = (S.screen === 'saved' ? savedView() : S.screen === 'phrases' ? phrasesView() : homeView()) + tabsView();
+  if (S.sheet) h += sheetView();
+  $('#view').innerHTML = h;
+  const shelf = $('.shelf');
+  if (shelf) { shelf.scrollLeft = S.card * SLOT; shelf.addEventListener('scroll', onSwipe, { passive: true }); }
+  const mic = $('[data-mic]');
+  if (mic) {
+    mic.addEventListener('pointerdown', micDown);
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => mic.addEventListener(ev, micUp));
+    mic.addEventListener('contextmenu', e => e.preventDefault());
+  }
+  scrollDown();
+}
+// 滑书架时只更新书的大小和下方说明，不整页重画
+function onSwipe(e) {
+  const i = Math.max(0, Math.min(ORDER.length - 1, Math.round(e.currentTarget.scrollLeft / SLOT)));
+  if (i === S.card) return;
+  S.card = i;
+  document.querySelectorAll('.book').forEach((b, k) => { b.style.transform = 'scale(' + (k === i ? 1 : .84) + ')'; b.style.opacity = k === i ? 1 : .7; });
+  document.querySelectorAll('.dot').forEach((d, k) => d.classList.toggle('on', k === i));
+  $('#active').innerHTML = activeView();
+}
+
+// ── 事件 ──
+const ACT = {
+  menu: () => set({ menu: !S.menu }),
+  pick: el => { const i = +el.dataset.i; set({ dramaIdx: i, menu: false }); persistDramas(); flash('已切换到《' + S.dramas[i].name + '》'); },
+  add: () => set({ menu: false, sheet: 'add', draft: { name: '', role: '', job: '' } }),
+  manage: () => set({ menu: false, sheet: 'manage' }),
+  close: () => set({ sheet: null }),
+  card: el => { const i = +el.dataset.i; if (i === S.card) openTool(ORDER[i]); else $('.shelf').scrollTo({ left: i * SLOT, behavior: 'smooth' }); },
+  open: el => openTool(el.dataset.id),
+  tab: el => set({ screen: el.dataset.k }),
+  openSaved: el => { if (TOOLS[el.dataset.tool]) openTool(el.dataset.tool, 'result'); },
+  copy: el => copyText(PHRASES[+el.dataset.i].text),
+  back, secondary, save,
+  auto: () => start('auto'),
+  self: () => start('self'),
+  restart: () => start(S.mode || 'auto'),
+  webPick: el => set({ webQ: S.webQ + 1, webScore: S.webScore + (+el.dataset.i) }),
+  replay: () => set({ webQ: 0, webScore: 0 }),
+  mod: el => applyMod(el.dataset.m),
+  saveDrama: () => {
+    const { name, role, job } = S.draft;
+    if (!name.trim() || !role.trim()) return flash('请填写剧名和角色');
+    const nd = { name: name.trim(), role: role.trim(), job: job.trim() || '角色' };
+    set({ dramas: [...S.dramas, nd], dramaIdx: S.dramas.length, sheet: null });
+    persistDramas(); flash('已切换到《' + nd.name + '》');
+  },
+  remove: el => {
+    const i = +el.dataset.i;
+    if (S.dramas.length < 2) return flash('至少保留一部戏');
+    const ds = S.dramas.filter((_, k) => k !== i); let di = S.dramaIdx;
+    if (i < di) di--; if (di >= ds.length) di = ds.length - 1;
+    set({ dramas: ds, dramaIdx: di }); persistDramas();
+  }
+};
+const app = $('#app');
+app.addEventListener('click', e => {
+  if (S.menu && !e.target.closest('.picker')) { S.menu = false; render(); return; }
+  const el = e.target.closest('[data-act]');
+  if (el && ACT[el.dataset.act]) ACT[el.dataset.act](el);
+});
+app.addEventListener('input', e => {
+  const k = e.target.dataset.field; if (!k) return;
+  S.draft[k] = e.target.value;
+  const btn = $('.save-drama');
+  if (btn) btn.style.background = S.draft.name.trim() && S.draft.role.trim() ? '#1D1C1A' : '#C9C4BA';
+});
+app.addEventListener('change', e => {
+  const i = e.target.dataset.upload; if (i == null) return;
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  readPoster(f, url => {
+    set({ dramas: S.dramas.map((x, k) => k === +i ? { ...x, poster: url, pos: undefined } : x) });
+    flash(persistDramas() ? '海报已更新' : '海报已更新，但手机存储不够，刷新后会消失');
+  });
+});
+window.addEventListener('pointerup', micUp);
+window.addEventListener('popstate', () => {
+  const id = location.hash.slice(1);
+  if (TOOLS[id]) { if (S.screen !== 'tool' || S.toolId !== id) openTool(id, null, true); }
+  else if (S.screen === 'tool') closeTool();
+});
+
+// ── 启动：支持 #web #job #bio #line #press 直达 ──
+const first = location.hash.slice(1);
+if (TOOLS[first]) { S.screen = 'tool'; S.toolId = first; S.card = Math.max(0, ORDER.indexOf(first)); }
+render();
+</script>
+</body>
+</html>
