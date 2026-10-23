@@ -76,10 +76,6 @@ button { cursor: pointer; }
   padding-left: max(12px, env(safe-area-inset-left, 0px));
   padding-right: max(12px, env(safe-area-inset-right, 0px));
 }
-.back {
-  display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px 0 0;
-  text-decoration: none; font-size: 17px;
-}
 h1 {
   margin: 0;
   font-family: var(--font-display);
@@ -213,7 +209,7 @@ h1 {
   background: var(--sheet);
   color: var(--ink);
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
 }
 .gen input::placeholder { color: var(--ink-3); }
 .gen .btn { flex: none; width: auto; min-width: 88px; padding: 0 14px; min-height: 44px; }
@@ -221,9 +217,24 @@ h1 {
   flex: none;
   margin: 0 12px 6px;
   min-height: 1.3em;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-2);
   text-align: left;
+}
+.gen-status.busy::before {
+  content: "";
+  display: inline-block;
+  width: 12px; height: 12px;
+  margin-right: 6px;
+  border-radius: 50%;
+  border: 2px solid var(--rule);
+  border-top-color: var(--accent);
+  vertical-align: -2px;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .gen-status.busy::before { animation: none; }
 }
 </style>
 </head>
@@ -678,15 +689,26 @@ async function fakeGenerate() {
   }
   generating = true;
   btnGen.disabled = true;
-  genStatus.textContent = "生成中… 正在想这段戏怎么演";
+  genStatus.classList.add("busy");
+  genStatus.textContent = "生成中…";
   setHint("生成中…");
-  const wait = 1600 + Math.floor(Math.random() * 1200);
+  const wait = 1500 + Math.floor(Math.random() * 1501);
   await new Promise((r) => setTimeout(r, wait));
+  if (recording) {
+    generating = false;
+    genStatus.classList.remove("busy");
+    genStatus.textContent = "";
+    btnGen.disabled = false;
+    setHint("先点停止，再换表情");
+    paint();
+    return;
+  }
   const i = pickRefFromPrompt(text);
-  selectRef(i);
-  genStatus.textContent = "好了：给你「" + REFS[i].label + "」——可以开始对着学";
-  setHint("看着上面学，再点录制");
   generating = false;
+  selectRef(i);
+  genStatus.classList.remove("busy");
+  genStatus.textContent = "完成";
+  setHint("可以开始对着学了");
   btnGen.disabled = false;
   paint();
 }
