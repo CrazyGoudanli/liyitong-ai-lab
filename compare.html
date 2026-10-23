@@ -58,11 +58,10 @@ button { cursor: pointer; }
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center center;
   background: #0E1119;
 }
-/* 参考片是竖屏，靠上取景，避免把头顶裁掉 */
-#ref { object-position: center 16%; }
 .mirror { transform: scaleX(-1); }
 .is-hidden { visibility: hidden; }
 
