@@ -59,9 +59,10 @@ button { cursor: pointer; }
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: center center;
   background: #0E1119;
 }
+/* 参考片完整露脸，宁可留黑边也不裁表情 */
+#ref { object-position: center center; }
 .mirror { transform: scaleX(-1); }
 .is-hidden { visibility: hidden; }
 
@@ -74,6 +75,10 @@ button { cursor: pointer; }
   padding: calc(2px + env(safe-area-inset-top, 0px)) 12px 0;
   padding-left: max(12px, env(safe-area-inset-left, 0px));
   padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+.back {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px 0 0;
+  text-decoration: none; font-size: 17px;
 }
 h1 {
   margin: 0;
@@ -190,6 +195,36 @@ h1 {
 .btn:active:not(:disabled) { transform: scale(.98); }
 .hint { margin: 8px 0 0; text-align: center; color: var(--ink-2); font-size: 14px; min-height: 1.4em; }
 .fine { margin: 2px 0 0; text-align: center; color: var(--ink-3); font-size: 12px; }
+
+.gen {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 8px;
+  align-items: stretch;
+}
+.gen input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--rule);
+  background: var(--sheet);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+.gen input::placeholder { color: var(--ink-3); }
+.gen .btn { flex: none; width: auto; min-width: 88px; padding: 0 14px; min-height: 44px; }
+.gen-status {
+  flex: none;
+  margin: 0 12px 6px;
+  min-height: 1.3em;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-align: left;
+}
 </style>
 </head>
 <body>
@@ -198,6 +233,11 @@ h1 {
     <div class="topbar">
       <h1>表情对比</h1>
     </div>
+    <div class="gen">
+      <input id="prompt" type="text" maxlength="80" placeholder="写想要的表情或剧情，比如：被误会后强撑笑" autocomplete="off" enterkeyhint="go">
+      <button type="button" class="btn primary" id="btn-gen">生成</button>
+    </div>
+    <p class="gen-status" id="gen-status" aria-live="polite"></p>
     <div class="tabs" id="tabs" role="tablist" aria-label="参考表情"></div>
     <div class="stage">
       <video id="ref" playsinline webkit-playsinline preload="metadata" disablepictureinpicture disableremoteplayback></video>
@@ -602,6 +642,59 @@ btnRec.addEventListener("click", startRec);
 btnStop.addEventListener("click", () => stopRec());
 btnPlay.addEventListener("click", playTogether);
 $("retry").addEventListener("click", () => { openCam(); });
+
+
+const promptEl = $("prompt");
+const btnGen = $("btn-gen");
+const genStatus = $("gen-status");
+let generating = false;
+
+function pickRefFromPrompt(text) {
+  const s = (text || "").trim();
+  const rules = [
+    [/怒|凶|排斥|别碰|生气|愤/, 0],
+    [/羞|不好意思|躲闪|甜/, 1],
+    [/怕|吓|躲避|紧张|慌/, 2],
+    [/伤|哭|难过|抗拒|心酸/, 3],
+    [/疲|累|烦|低头|厌倦/, 4],
+  ];
+  for (const [re, i] of rules) if (re.test(s)) return i;
+  // fake "model": hash-ish pick
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h + s.charCodeAt(i) * (i + 1)) % REFS.length;
+  return s ? h : Math.floor(Math.random() * REFS.length);
+}
+
+async function fakeGenerate() {
+  if (generating || recording) {
+    setHint(recording ? "先点停止，再生成" : "正在生成，稍等");
+    return;
+  }
+  const text = (promptEl.value || "").trim();
+  if (!text) {
+    genStatus.textContent = "先写一句想要的表情或剧情";
+    promptEl.focus();
+    return;
+  }
+  generating = true;
+  btnGen.disabled = true;
+  genStatus.textContent = "生成中… 正在想这段戏怎么演";
+  setHint("生成中…");
+  const wait = 1600 + Math.floor(Math.random() * 1200);
+  await new Promise((r) => setTimeout(r, wait));
+  const i = pickRefFromPrompt(text);
+  selectRef(i);
+  genStatus.textContent = "好了：给你「" + REFS[i].label + "」——可以开始对着学";
+  setHint("看着上面学，再点录制");
+  generating = false;
+  btnGen.disabled = false;
+  paint();
+}
+
+btnGen.addEventListener("click", () => { fakeGenerate(); });
+promptEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); fakeGenerate(); }
+});
 
 buildTabs();
 openCam();
