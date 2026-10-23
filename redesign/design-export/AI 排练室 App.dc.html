@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E9E6DF;font-family:"PingFang SC","Noto Sans SC",system-ui,sans-serif;color:#1D1C1A;-webkit-font-smoothing:antialiased}
+a{color:#B8432B}a:hover{color:#8F3220}
+@keyframes dcpulse{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+@keyframes dcdot{0%,80%,100%{opacity:.25}40%{opacity:1}}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;gap:48px;justify-content:center;align-items:flex-start;padding:48px 32px;box-sizing:border-box">
+
+<div style="width:390px;height:844px;border-radius:52px;border:11px solid #161514;background:#F5F3EE;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 60px rgba(0,0,0,.18);flex:none">
+  <div style="height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 30px;font:600 15px system-ui;color:#1D1C1A">
+    <span>9:41</span><span style="width:110px;height:30px;background:#161514;border-radius:20px;margin-top:4px"></span><span style="font-size:13px">5G ▮</span>
+  </div>
+
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;overflow-y:auto;padding:12px 22px 24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 22px;position:relative;z-index:5">
+        <h1 style="font:700 26px/1.3 'Noto Serif SC',serif;margin:0;text-wrap:pretty">今天想用 AI<br>做点什么？</h1>
+        <div style="position:relative;flex:none">
+          <div onClick="{{ toggleMenu }}" style="display:flex;align-items:center;gap:6px;height:40px;padding:0 12px 0 14px;border-radius:999px;border:1px solid #D9D4CA;background:#fff;cursor:pointer;max-width:150px" style-active="background:#EFECE6">
+            <span style="font:600 15px 'Noto Serif SC',serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">《{{ drama.name }}》</span>
+            <span style="font-size:11px;color:#8A867E">▼</span>
+          </div>
+          <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;right:0;top:48px;width:230px;background:#fff;border:1px solid #E4E0D8;border-radius:16px;box-shadow:0 14px 30px rgba(0,0,0,.14);overflow:hidden">
+              <div style="padding:12px 16px 6px;font-size:13px;color:#8A867E">正在准备的戏</div>
+              <sc-for list="{{ dramaList }}" as="d" hint-placeholder-count="2">
+                <div onClick="{{ d.pick }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer" style-active="background:#F5F3EE">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <span style="font:600 16px 'Noto Serif SC',serif">《{{ d.name }}》</span>
+                    <span style="font-size:13px;color:#8A867E">{{ d.role }} · {{ d.job }}</span>
+                  </div>
+                  <span style="color:#B8432B;font-size:15px">{{ d.check }}</span>
+                </div>
+              </sc-for>
+              <div style="display:flex;border-top:1px solid #EFECE6">
+                <div onClick="{{ openAdd }}" style="flex:1;padding:13px 0;text-align:center;font-size:15px;font-weight:600;cursor:pointer;border-right:1px solid #EFECE6" style-active="background:#F5F3EE">＋ 新增</div>
+                <div onClick="{{ openManage }}" style="flex:1;padding:13px 0;text-align:center;font-size:15px;color:#5E5B55;cursor:pointer" style-active="background:#F5F3EE">管理</div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ layoutPhase }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative;margin:0 -22px">
+          <div onScroll="{{ onSwipe }}" style="display:flex;align-items:flex-end;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px calc(50% - 115px) 0;height:368px;box-sizing:border-box;scrollbar-width:none;position:relative;z-index:1">
+            <sc-for list="{{ cards }}" as="t" hint-placeholder-count="5">
+              <div onClick="{{ t.tap }}" style="flex:none;width:230px;display:flex;justify-content:center;scroll-snap-align:center;cursor:pointer">
+                <div style="width:210px;height:300px;transform-origin:bottom center;transform:scale({{ t.scale }});opacity:{{ t.opacity }};transition:transform .3s,opacity .3s;position:relative;border-radius:4px 12px 12px 4px;background:{{ t.cover }};box-shadow:inset 14px 0 0 rgba(0,0,0,.14),inset 16px 0 0 rgba(255,255,255,.18),5px 0 0 -1px #F4F0E8,6px 0 0 -1px #D6D0C4,12px 14px 22px rgba(0,0,0,.22);padding:18px 18px 20px 30px;box-sizing:border-box;display:flex;flex-direction:column;color:#fff">
+                  <div style="position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none">
+                    <sc-if value="{{ hasPoster }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background-image:{{ posterBg }};background-size:cover;background-position:{{ posterPos }}"></div></sc-if>
+                    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 26%,rgba(0,0,0,0) 46%,rgba(0,0,0,.78) 100%);mix-blend-mode:multiply"></div>
+                    <div style="position:absolute;inset:0;background:{{ t.cover }};opacity:{{ tintOpacity }};mix-blend-mode:color"></div>
+                    <div style="position:absolute;top:0;bottom:0;left:0;width:14px;background:rgba(0,0,0,.28);box-shadow:2px 0 0 rgba(255,255,255,.2)"></div>
+                  </div>
+                  <div style="position:relative;flex:1;display:flex;flex-direction:column">
+                  <span style="font-size:13px;font-weight:600;opacity:.85;letter-spacing:.04em">{{ t.phase }}</span>
+                  <div style="flex:1"></div>
+                  <span style="font:700 23px/1.3 'Noto Serif SC',serif;text-wrap:pretty">{{ t.name }}</span>
+                  <span style="font-size:13px;opacity:.8;margin-top:8px;border-top:1px solid rgba(255,255,255,.35);padding-top:8px">《{{ drama.name }}》· {{ drama.role }}</span>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:14px;background:#3A2F27;margin-top:-4px;box-shadow:0 8px 14px rgba(0,0,0,.18)"></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:7px;margin-top:16px">
+          <sc-for list="{{ cardDots }}" as="d" hint-placeholder-count="5">
+            <span style="height:6px;border-radius:9px;width:{{ d.w }};background:{{ d.c }};transition:width .2s"></span>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:18px;text-align:center">
+          <span style="font-size:14px;color:#B8432B;font-weight:600">{{ activeTool.when }}</span>
+          <span style="font-size:17px;line-height:1.5;color:#5E5B55;max-width:280px;text-wrap:pretty">{{ activeTool.short }}</span>
+        </div>
+        <div onClick="{{ activeTool.open }}" style="margin:18px auto 0;width:200px;height:54px;border-radius:999px;background:#1D1C1A;color:#F5F3EE;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer" style-active="transform:scale(.97)">翻开这本</div>
+      </sc-if>
+
+      <sc-if value="{{ layoutGrid }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px">
+          <sc-for list="{{ toolList }}" as="t" hint-placeholder-count="5">
+            <div onClick="{{ t.open }}" style="background:#fff;border:1px solid #E4E0D8;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:18px;cursor:pointer;min-height:132px" style-active="background:#F5F3EE">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                <span style="width:44px;height:44px;border:1.5px solid #1D1C1A;border-radius:12px;display:flex;align-items:center;justify-content:center;font:700 21px 'Noto Serif SC',serif">{{ t.glyph }}</span>
+                <span style="font-size:13px;color:#8A867E">{{ t.phase }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:18px;font-weight:600">{{ t.name }}</span>
+                <span style="font-size:14px;color:#5E5B55">{{ t.when }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isSaved }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;overflow-y:auto;padding:12px 22px 24px">
+      <h1 style="font:700 28px 'Noto Serif SC',serif;margin:6px 0 6px">我的收藏</h1>
+      <div style="font-size:16px;color:#5E5B55;margin-bottom:20px">只存在这台手机里</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ savedList }}" as="s" hint-placeholder-count="2">
+          <div onClick="{{ s.open }}" style="background:#fff;border:1px solid #E4E0D8;border-radius:18px;padding:16px;display:flex;gap:14px;align-items:center;cursor:pointer" style-active="background:#F5F3EE">
+            <span style="width:46px;height:46px;flex:none;background:#1D1C1A;color:#F5F3EE;border-radius:12px;display:flex;align-items:center;justify-content:center;font:700 22px 'Noto Serif SC',serif">{{ s.glyph }}</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+              <span style="font-size:18px;font-weight:600">{{ s.title }}</span>
+              <span style="font-size:14px;color:#8A867E">{{ s.meta }}</span>
+            </div>
+            <span style="color:#B5B0A6;font-size:20px">›</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isPhrases }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;overflow-y:auto;padding:12px 22px 24px">
+      <h1 style="font:700 28px 'Noto Serif SC',serif;margin:6px 0 6px">随身话术卡</h1>
+      <div style="font-size:16px;color:#5E5B55;margin-bottom:20px;line-height:1.5">离开这里，也能照着对任何 AI 说</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ phrases }}" as="p" hint-placeholder-count="6">
+          <div style="background:#fff;border:1px solid #E4E0D8;border-radius:18px;padding:16px 16px 12px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:14px;color:#B8432B;font-weight:600">{{ p.label }}</span>
+            <span style="font:500 18px/1.55 'Noto Serif SC',serif">“{{ p.text }}”</span>
+            <div style="display:flex;justify-content:flex-end">
+              <span onClick="{{ p.copy }}" style="font-size:15px;padding:8px 14px;border-radius:999px;border:1px solid #E4E0D8;cursor:pointer" style-active="background:#F5F3EE">复制</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isTabbed }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:none;display:flex;border-top:1px solid #E4E0D8;background:#F5F3EE;padding:8px 12px 26px">
+      <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="3">
+        <div onClick="{{ tb.go }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0;cursor:pointer">
+          <span style="font-size:16px;font-weight:{{ tb.weight }};color:{{ tb.color }}">{{ tb.label }}</span>
+          <span style="width:5px;height:5px;border-radius:9px;background:{{ tb.dot }}"></span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isTool }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:none;display:flex;align-items:center;padding:6px 14px 10px;border-bottom:1px solid #E4E0D8">
+      <span onClick="{{ back }}" style="font-size:17px;padding:8px 10px;cursor:pointer;min-width:64px">‹ 返回</span>
+      <span style="flex:1;text-align:center;font:700 18px 'Noto Serif SC',serif">{{ tool.name }}</span>
+      <span style="min-width:64px;text-align:right;font-size:14px;color:#8A867E;padding-right:6px">{{ tool.phase }}</span>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow-y:auto;padding:18px 20px 20px;display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <span style="width:30px;height:30px;flex:none;border:1px solid #B5B0A6;border-radius:8px;display:flex;align-items:center;justify-content:center;font:700 15px 'Noto Serif SC',serif;color:#8A867E">{{ tool.glyph }}</span>
+        <span style="font-size:15px;line-height:1.55;color:#8A867E;text-wrap:pretty;padding-top:4px">{{ tool.desc }}</span>
+      </div>
+
+      <sc-if value="{{ isIntro }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #E4E0D8;border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:14px;color:#8A867E">你会得到</span>
+            <span style="font-size:18px;font-weight:600">{{ tool.get }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #EFECE6;padding-top:14px">
+            <span style="font-size:14px;color:#8A867E">已经帮你填好的例子</span>
+            <span style="font:500 18px/1.55 'Noto Serif SC',serif">{{ tool.example }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+            <div onClick="{{ startAuto }}" style="height:54px;border-radius:14px;background:#1D1C1A;color:#F5F3EE;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer" style-active="transform:scale(.98)">直接试试</div>
+            <div onClick="{{ startSelf }}" style="height:54px;border-radius:14px;border:1.5px solid #1D1C1A;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer" style-active="background:#EFECE6">换我来说</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-for list="{{ msgs }}" as="m" hint-placeholder-count="0">
+        <sc-if value="{{ m.isAi }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:6px;max-width:92%">
+            <span style="font-size:13px;color:#8A867E">{{ m.who }}</span>
+            <span style="font:500 18px/1.65 'Noto Serif SC',serif;color:#1D1C1A">{{ m.text }}</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+          <div style="align-self:flex-end;max-width:82%;background:#1D1C1A;color:#F5F3EE;border-radius:18px 18px 4px 18px;padding:12px 15px;font-size:17px;line-height:1.55">{{ m.text }}</div>
+        </sc-if>
+      </sc-for>
+
+      <sc-if value="{{ isThinking }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;font-size:16px;color:#5E5B55">{{ dots }}<span>正在整理成卡片</span></div>
+      </sc-if>
+
+      <sc-if value="{{ showCard }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #E4E0D8;border-radius:20px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.05)">
+          <div style="padding:16px 18px;border-bottom:1px solid #EFECE6;display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font:700 19px 'Noto Serif SC',serif">{{ card.title }}</span>
+            <span style="font-size:14px;color:#B8432B">{{ card.tag }}</span>
+          </div>
+          <div style="padding:6px 18px 8px;display:flex;flex-direction:column">
+            <sc-for list="{{ card.sections }}" as="sec" hint-placeholder-count="3">
+              <div style="padding:12px 0;border-bottom:1px solid #F1EEE8;display:flex;flex-direction:column;gap:8px">
+                <span style="font-size:14px;font-weight:600;color:#B8432B">{{ sec.t }}</span>
+                <sc-for list="{{ sec.items }}" as="it" hint-placeholder-count="2">
+                  <div style="display:flex;gap:10px;font-size:17px;line-height:1.55"><span style="color:#B5B0A6">·</span><span style="flex:1;text-wrap:pretty">{{ it }}</span></div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:10px 18px 16px;font-size:14px;color:#8A867E;line-height:1.5">{{ card.note }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showWeb }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="border-radius:20px;overflow:hidden;border:1px solid #E4E0D8;background:{{ web.bg }}">
+            <div style="padding:8px 14px;background:rgba(0,0,0,.04);font:12px ui-monospace,Menlo,monospace;color:#8A867E;display:flex;justify-content:space-between"><span>预览 · 只在这里能看到</span><span>{{ web.progress }}</span></div>
+            <div style="padding:20px 18px 22px;display:flex;flex-direction:column;gap:14px">
+              <span style="font:700 21px/1.35 'Noto Serif SC',serif;color:{{ web.ink }}">你像一桐的哪个角色？</span>
+              <sc-if value="{{ web.asking }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size:17px;color:{{ web.ink }}">{{ web.q }}</span>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ web.opts }}" as="o" hint-placeholder-count="3">
+                    <div onClick="{{ o.pick }}" style="padding:12px 14px;border-radius:12px;background:#fff;border:1.5px solid {{ web.accent }};color:{{ web.ink }};font-size:16px;cursor:pointer" style-active="opacity:.7">{{ o.label }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ web.done }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#fff;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px">
+                  <span style="font-size:14px;color:{{ web.accent }};font-weight:600">你最像</span>
+                  <span style="font:700 26px 'Noto Serif SC',serif;color:{{ web.ink }}">{{ web.role }}</span>
+                  <span style="font-size:16px;line-height:1.55;color:#5E5B55">{{ web.roleDesc }}</span>
+                  <span onClick="{{ web.replay }}" style="align-self:flex-start;margin-top:4px;font-size:15px;color:{{ web.accent }};cursor:pointer">再测一次</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ web.signed }}" hint-placeholder-val="{{ false }}">
+                <span style="font:500 15px 'Noto Serif SC',serif;color:{{ web.accent }};text-align:right">— 李雪（李一桐）</span>
+              </sc-if>
+            </div>
+          </div>
+          <span style="font-size:14px;color:#8A867E">{{ web.log }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <sc-for list="{{ web.mods }}" as="md" hint-placeholder-count="3">
+              <span onClick="{{ md.apply }}" style="font-size:15px;padding:9px 14px;border-radius:999px;border:1px solid #D9D4CA;background:#fff;cursor:pointer" style-active="background:#EFECE6">“{{ md.label }}”</span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="flex:none;border-top:1px solid #E4E0D8;background:#F5F3EE;padding:12px 18px 28px;position:relative">
+      <sc-if value="{{ barResult }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:10px">
+          <div onClick="{{ restart }}" style="flex:1;height:56px;border-radius:16px;border:1.5px solid #1D1C1A;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer" style-active="background:#EFECE6">再来一次</div>
+          <div onClick="{{ save }}" style="flex:1;height:56px;border-radius:16px;background:#1D1C1A;color:#F5F3EE;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer" style-active="transform:scale(.98)">{{ saveLabel }}</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ barMic }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:10px;align-items:center">
+          <sc-if value="{{ hasSecondary }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ secondary }}" style="width:76px;height:60px;flex:none;border-radius:16px;border:1.5px solid #D9D4CA;background:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;opacity:{{ secOpacity }};cursor:pointer">{{ tool.secondary }}</div>
+          </sc-if>
+          <div onPointerDown="{{ micDown }}" onPointerUp="{{ micUp }}" onPointerLeave="{{ micUp }}" style="flex:1;height:60px;border-radius:16px;background:{{ micBg }};color:{{ micInk }};display:flex;align-items:center;justify-content:center;gap:10px;font-size:18px;font-weight:600;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none;position:relative">
+            {{ pulse }}<span style="width:10px;height:10px;border-radius:9px;background:{{ micDot }}"></span><span>{{ micLabel }}</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(29,28,26,.35);z-index:20"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;z-index:21;background:#F5F3EE;border-radius:24px 24px 0 0;padding:10px 22px 34px;display:flex;flex-direction:column;gap:16px;max-height:80%;overflow-y:auto">
+      <span style="align-self:center;width:40px;height:5px;border-radius:9px;background:#D9D4CA"></span>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font:700 21px 'Noto Serif SC',serif">{{ sheetTitle }}</span>
+        <span onClick="{{ closeSheet }}" style="font-size:16px;color:#5E5B55;padding:8px;cursor:pointer">关闭</span>
+      </div>
+      <sc-if value="{{ isAdd }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ fields }}" as="f" hint-placeholder-count="3">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:14px;color:#8A867E">{{ f.label }}</span>
+              <input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.ph }}" style="height:50px;border-radius:12px;border:1px solid #D9D4CA;background:#fff;padding:0 14px;font:500 17px 'PingFang SC','Noto Sans SC',sans-serif;color:#1D1C1A;outline:none" style-focus="border-color:#1D1C1A"></input>
+            </label>
+          </sc-for>
+          <span style="font-size:14px;color:#8A867E;line-height:1.5">保存后，五本书都会换成这部戏的内容。</span>
+          <div onClick="{{ saveDrama }}" style="height:54px;border-radius:14px;background:{{ addBg }};color:#F5F3EE;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer">保存并切换</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isManage }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #E4E0D8;border-radius:16px;overflow:hidden">
+          <sc-for list="{{ dramaList }}" as="d" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #EFECE6">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font:600 17px 'Noto Serif SC',serif">《{{ d.name }}》</span>
+                <span style="font-size:14px;color:#8A867E">{{ d.role }} · {{ d.job }}</span>
+              </div>
+              <span style="font-size:13px;color:#B8432B">{{ d.currentLabel }}</span>
+              <label style="font-size:15px;color:#1D1C1A;padding:8px 10px;border-radius:999px;border:1px solid #E4E0D8;cursor:pointer;white-space:nowrap">{{ d.posterLabel }}<input type="file" accept="image/*" onChange="{{ d.upload }}" style="display:none"></input></label>
+              <span onClick="{{ d.remove }}" style="font-size:15px;color:{{ d.removeInk }};padding:8px 10px;border-radius:999px;border:1px solid #E4E0D8;cursor:pointer">删除</span>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ openAdd }}" style="height:54px;border-radius:14px;border:1.5px solid #1D1C1A;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;cursor:pointer" style-active="background:#EFECE6">＋ 新增一部戏</div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:50%;bottom:120px;transform:translateX(-50%);background:#1D1C1A;color:#F5F3EE;font-size:16px;padding:12px 18px;border-radius:999px;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.2)">{{ toast }}</div>
+  </sc-if>
+</div>
+
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:360px;flex:1 1 300px;font-size:14px;line-height:1.7;color:#3A3834;display:flex;flex-direction:column;gap:18px;padding-top:12px">
+  <div style="font:700 22px 'Noto Serif SC',serif;color:#1D1C1A">改版思路</div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <b>1 · 样式</b>
+    <span>按需求文档“像一本干净的工作手册”：暖白纸色 + 墨黑 + 一个朱红点缀。标题用宋体，正文 ≥17px。功能图标用单个汉字（读 / 职 / 传 / 访 / 网），不再用彩色书封。</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <b>2 · 结构跟着她的工作走</b>
+    <span>保留“一本书 = 一个功能”的书架，左右滑动换书，中间那本放大；书下方只显示这本的用途和一个“翻开这本”按钮。书封用统一的版式（阶段 · 图标 · 书名），颜色同明度不同色相。第一本是最有“哇”感的做网页。收藏和话术卡放进底部标签栏。</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <b>3 · 五个功能，一套操作</b>
+    <span>每个功能页结构相同：一句说明 → 你会得到 + 预填例子 → “直接试试 / 换我来说” → 对话 → 结果卡。底部永远是同一个“按住说话”大按钮，左侧最多一个辅助键（拍一句 / 跳过 / 再问一遍）。结果出来后底栏统一变成“再来一次 / 收藏”。</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <b>前提假设</b>
+    <span>称呼暂用“一桐”。Figma 链接我打不开，样式没参考原稿。台词、记者问题、角色描述都是示意，需要团队核对。</span>
+  </div>
+  <div style="color:#8A867E">在 Tweaks 里可以切换首页布局（书架 / 网格）。</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;homeLayout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;shelf&quot;,&quot;grid&quot;],&quot;default&quot;:&quot;shelf&quot;,&quot;tsType&quot;:&quot;'shelf'|'grid'&quot;},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const TOOLS = {
+  web: { name: '一句话做网页', glyph: '网', phase: '个人表达', when: '想和粉丝互动时', short: '说一句想做什么，AI 当场做出来',
+    desc: '说一句想做什么，AI 当场做出一个能点着玩的网页。', get: '一个粉丝测试页，可以接着说怎么改',
+    example: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。',
+    script: [{ u: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。' }, { a: '做好了，可以点着试试。想改哪里，按住直接说。' }], kind: 'web' },
+  line: { name: '台词速懂', glyph: '读', phase: '拍戏期', when: '拿到台词时', short: '拍一句台词，看意思、典故和礼数',
+    desc: '拍一句看不懂的台词，看白话意思、典故，和古人这时候怎么做。', get: '三张小卡：意思 · 典故 · 礼数',
+    example: '多谢姑娘救命之恩，来日必当结草衔环以报。', secondary: '拍一句',
+    script: [{ u: '多谢姑娘救命之恩，来日必当结草衔环以报。' }, { a: '这句看懂了。“结草衔环”是报恩的老说法，我分成三张卡给你。' }],
+    card: { title: '台词速懂', tag: '结草衔环', note: '读音以台词老师为准，典故请团队核对。', sections: [
+      { t: '白话意思', items: ['谢谢你救了我的命，以后一定拼尽全力报答你。'] },
+      { t: '典故出处', items: ['结草：《左传》，魏颗没让父亲的妾殉葬，后来老人结草绊倒敌将报恩。', '衔环：杨宝救了一只黄雀，黄雀衔来白环相报。'] },
+      { t: '这时候怎么做', items: ['说话时行礼，女子福身、男子作揖。', '语气郑重，说到“来日”时可以抬眼看对方。'] }] } },
+  job: { name: '职业功课', glyph: '职', phase: '进组前', when: '进组前', short: 'AI 扮成这一行的人，和你聊十分钟',
+    desc: '选一个职业，AI 扮成这一行的人和你聊，聊完整理成功课卡。', get: '一张职业功课卡：说法 · 动作 · 一天',
+    example: '律师 ·《美人余》余梦',
+    script: [{ a: '你好，我做了十年民商事诉讼律师。想了解这一行的什么？' }, { u: '律师平时说话有什么习惯？' },
+      { a: '先说结论，再讲理由。我们很少说“我觉得”，更常说“根据……”。跟客户说话会放慢，跟对方律师会更短。' }, { u: '那站着的时候呢？' },
+      { a: '开庭时站得很直，手放在桌面材料上，不插兜、不抱胸。翻材料很利落，像随时能找到那一页。' }],
+    card: { title: '职业功课卡', tag: '律师', note: '专业细节以剧组顾问或真实从业者为准。', sections: [
+      { t: '常用说法', items: ['“根据合同第几条……”', '“这个问题我需要先确认事实。”', '“我们的诉求有三点。”'] },
+      { t: '习惯动作', items: ['开庭时站直，手放在材料上', '翻材料快且准', '听对方说话时边听边记'] },
+      { t: '一天怎么过', items: ['早上看卷宗、回客户消息', '下午见客户或开庭', '晚上写文书，经常加班'] }] } },
+  bio: { name: '人物小传', glyph: '传', phase: '进组前', when: '进组前', short: '回答问题，得到一份人物小传',
+    desc: 'AI 一次只问一个问题，你用说话回答，最后整理成小传。', get: '一份只用你说过的话写成的小传',
+    example: '余梦 · 全职太太，后来成为律师', secondary: '跳过',
+    script: [{ a: '第 1 题：余梦小时候，家里谁对她影响最大？' }, { u: '应该是妈妈，妈妈一直跟她说女孩子要靠自己。' },
+      { a: '第 2 题：她结婚的时候，最想要的是什么？' }, { u: '一个安稳的家，她觉得那就够了。' },
+      { a: '第 3 题：她现在最怕什么？' }, { u: '怕自己再一次什么都没有。' }],
+    card: { title: '人物小传', tag: '余梦', note: '只用了你说过的话，没有替你编。还剩 5 题，可以随时接着答。', sections: [
+      { t: '成长经历', items: ['妈妈一直告诉她，女孩子要靠自己。'] },
+      { t: '想要什么', items: ['结婚时只想要一个安稳的家。'] },
+      { t: '怕什么', items: ['怕自己再一次什么都没有。'] },
+      { t: '和别人的关系', items: ['还没回答'] }] } },
+  press: { name: '采访陪练', glyph: '访', phase: '宣传期', when: '去发布会的车上', short: 'AI 扮记者提问，帮你理成要点',
+    desc: 'AI 扮记者问你问题，你随便说，它帮你理成两三个要点。', get: '每个问题 2–3 个要点',
+    example: '《美人余》发布会 · 5 个问题', secondary: '再问一遍',
+    script: [{ a: '第 1 题：这次署名改成“李雪（李一桐）”，是有什么考虑吗？' }, { u: '其实李雪是我的本名，想让大家认识更完整的我，也算一个新的开始。' },
+      { a: '第 2 题：余梦从全职太太变成律师，你觉得最难演的是哪一段？' }, { u: '是她刚出去工作那段，她心里很慌，但又不能让别人看出来。' }],
+    card: { title: '采访要点', tag: '《美人余》发布会', note: '口径以宣传团队为准。不打分，只整理你说过的话。', sections: [
+      { t: '署名改为“李雪（李一桐）”', items: ['李雪是我的本名', '想让大家认识更完整的我', '一个新的开始'] },
+      { t: '余梦最难演的一段', items: ['刚出去工作的那段', '心里慌，表面要稳'] }] } }
+};
+const ORDER = ['job', 'bio', 'line', 'press', 'web'];
+const COVERS = { web: 'oklch(0.62 0.13 40)', job: 'oklch(0.62 0.09 240)', press: 'oklch(0.48 0.13 265)', line: 'oklch(0.7 0.11 80)', bio: 'oklch(0.55 0.08 160)' };
+const GROUPS = [
+  { phase: '拍戏期', when: '在片场', ids: ['line'], hasRecorder: true },
+  { phase: '进组前', when: '准备新角色', ids: ['job', 'bio'] },
+  { phase: '宣传期', when: '发布会、采访前', ids: ['press'] },
+  { phase: '个人表达', when: '和粉丝互动', ids: ['web'] }
+];
+const QUIZ = [
+  { q: '周末你更想……', f: '周末突然多出一天假，你第一反应？', o: ['在家看书', '约朋友出门', '一个人去旅行'] },
+  { q: '遇到难题，你会……', f: '老板临时甩来一个大难题，你……', o: ['先自己想办法', '找人商量', '睡一觉再说'] },
+  { q: '你更喜欢哪种衣服？', f: '明天拍定妆照，你会偷偷选……', o: ['利落的西装', '温柔的长裙', '舒服的卫衣'] },
+  { q: '朋友眼里的你是……', f: '如果朋友给你起外号，会是……', o: ['靠谱', '好玩', '安静'] },
+  { q: '你最想拥有的能力？', f: '给你一个超能力，你选……', o: ['说服别人', '让人开心', '看透人心'] }
+];
+const ROLES = [
+  { n: '余梦', d: '外柔内刚，认准了就一步步走出自己的路。' },
+  { n: '孟钰', d: '心里有主意，嘴上不多说，关键时候最靠得住。' },
+  { n: '陈雀儿', d: '机灵爱笑，走到哪里都能把气氛点亮。' }
+];
+const MODS = ['改成淡蓝色', '题目再有趣一点', '加上我的签名'];
+const PHRASES = [
+  { label: '台词速懂', text: '这句台词什么意思？古人这时候会怎么做？' },
+  { label: '职业功课', text: '我要演一个律师，你扮律师和我聊十分钟，再告诉我律师说话和站姿有什么习惯。' },
+  { label: '人物小传', text: '我要演余梦，你一次问我一个问题，问完帮我整理成小传，只用我说过的话。' },
+  { label: '采访陪练', text: '今天是《美人余》的发布会，你扮记者问我五个问题。' },
+  { label: '整理要点', text: '把我刚才说的，整理成两三个要点。' },
+  { label: '做网页', text: '帮我做一个测试页，问 5 个问题，告诉粉丝像我的哪个角色。' }
+];
+
+class Component extends DCLogic {
+  state = { screen: 'home', from: 'home', toolId: 'web', stage: 'intro', mode: null, msgs: [], step: 0, waiting: false, recording: false,
+    saved: [{ tool: 'job', at: '昨天' }], failed: {}, card: 0, menu: false, sheet: null, draft: { name: '', role: '', job: '' },
+    dramas: [{ name: '美人余', role: '余梦', job: '律师', poster: 'posters/meirenyu.png', pos: '45% 45%' }, { name: '我不是大师', role: '江飞燕', job: '戏班花旦', poster: 'posters/wobushidashi.png', pos: '30% 20%' }], dramaIdx: 0, savedNow: false, toast: '', webQ: 0, webScore: 0, mods: [], webLog: '' };
+  scrollRef = React.createRef();
+  timers = [];
+  later(fn, ms) { this.timers.push(setTimeout(fn, ms)); }
+  clear() { this.timers.forEach(clearTimeout); this.timers = []; clearInterval(this.iv); }
+  componentWillUnmount() { this.clear(); clearTimeout(this.tt); }
+  scrollDown() { setTimeout(() => { const el = document.querySelector('[data-scroll]'); if (el) el.scrollTop = el.scrollHeight; }, 30); }
+  setState(u, cb) { super.setState(u, () => { this.scrollDown(); cb && cb(); }); }
+  flash(msg) { clearTimeout(this.tt); this.setState({ toast: msg }); this.tt = setTimeout(() => this.setState({ toast: '' }), 1600); }
+  stream(role, text, done) {
+    this.setState(s => ({ msgs: [...s.msgs, { role, text: '' }] }));
+    let i = 0; clearInterval(this.iv);
+    this.iv = setInterval(() => {
+      i += role === 'a' ? 2 : 3;
+      this.setState(s => { const m = s.msgs.slice(); m[m.length - 1] = { role, text: text.slice(0, i) }; return { msgs: m }; });
+      if (i >= text.length) { clearInterval(this.iv); this.later(done, 380); }
+    }, 38);
+  }
+  run() {
+    const t = this.T(this.state.toolId), i = this.state.step;
+    if (i >= t.script.length) {
+      this.setState({ stage: 'thinking', waiting: false });
+      this.later(() => this.setState({ stage: 'result' }), t.kind === 'web' ? 1500 : 1100);
+      return;
+    }
+    const st = t.script[i];
+    if (st.a) this.stream('a', st.a, () => this.setState({ step: i + 1 }, () => this.run()));
+    else if (this.state.mode === 'auto') this.later(() => this.stream('u', st.u, () => this.setState({ step: i + 1 }, () => this.run())), 650);
+    else this.setState({ waiting: true });
+  }
+  userSay(text) {
+    if (!this.state.waiting) return;
+    const t = this.T(this.state.toolId), i = this.state.step;
+    this.setState({ waiting: false });
+    this.stream('u', text || t.script[i].u, () => this.setState({ step: i + 1 }, () => this.run()));
+  }
+  start(mode) { this.clear(); this.setState({ mode, stage: 'session', msgs: [], step: 0, waiting: false, savedNow: false, webQ: 0, webScore: 0, mods: [], webLog: '' }, () => this.run()); }
+  openTool(id, stage) {
+    this.clear();
+    this.setState(s => ({ screen: 'tool', from: s.screen === 'tool' ? s.from : s.screen, toolId: id, stage: stage || 'intro', mode: 'auto', msgs: [], step: 0, waiting: false,
+      savedNow: !!stage, webQ: 0, webScore: 0, mods: [], webLog: '' }));
+  }
+  applyMod(label) {
+    const left = MODS.filter(m => !this.state.mods.includes(m));
+    const m = label || left[0]; if (!m) return;
+    this.setState(s => ({ mods: [...s.mods, m], webLog: '你说：“' + m + '”，已经改好了。' }));
+  }
+  micDown = (e) => {
+    const { stage, waiting, toolId } = this.state;
+    const can = (stage === 'session' && waiting) || (stage === 'result' && toolId === 'web' && this.state.mods.length < MODS.length);
+    if (!can) return;
+    this.setState({ recording: true });
+  };
+  micUp = () => {
+    if (!this.state.recording) return;
+    this.setState({ recording: false });
+    if (this.state.stage === 'result') this.applyMod(); else this.userSay();
+  };
+  secondary = () => {
+    const { toolId, waiting, step } = this.state, t = this.T(toolId);
+    if (!waiting) return;
+    if (toolId === 'line') this.userSay('📷 拍了一句：' + t.example);
+    else if (toolId === 'bio') this.userSay('（这题先跳过）');
+    else if (toolId === 'press') { this.setState({ waiting: false }); this.stream('a', '换个问法：' + t.script[step - 1].a.replace(/^第 \d 题：/, ''), () => this.setState({ waiting: true })); }
+  };
+  T(id) {
+    const d = this.state.dramas[this.state.dramaIdx] || this.state.dramas[0];
+    if (!d || (d.name === '美人余' && d.role === '余梦' && d.job === '律师')) return TOOLS[id];
+    const j = JSON.stringify(TOOLS[id]).split('美人余').join(d.name).split('余梦').join(d.role).split('律师').join(d.job);
+    return JSON.parse(j);
+  }
+  renderVals() {
+    const s = this.state, t = this.T(s.toolId);
+    const layout = this.props.homeLayout ?? 'shelf';
+    const mk = id => ({ ...this.T(id), open: () => this.openTool(id) });
+    const drama = s.dramas[s.dramaIdx] || { name: '未选择', role: '', job: '' };
+    const setDraft = k => e => { const v = e.target.value; this.setState(st => ({ draft: { ...st.draft, [k]: v } })); };
+    const draftOk = s.draft.name.trim() && s.draft.role.trim();
+    const isTool = s.screen === 'tool';
+    const isWeb = t.kind === 'web';
+    const canTalk = (s.stage === 'session' && s.waiting) || (s.stage === 'result' && isWeb && s.mods.length < MODS.length);
+    let micLabel = '按住 说话';
+    if (s.recording) micLabel = '松开 发送';
+    else if (s.stage === 'intro') micLabel = '先选上面一种方式';
+    else if (s.stage === 'thinking') micLabel = '正在整理…';
+    else if (s.stage === 'session' && !s.waiting) micLabel = s.mode === 'auto' ? '正在演示…' : 'AI 在说…';
+    else if (s.stage === 'session' && s.waiting) micLabel = '按住 说话回答';
+    else if (s.stage === 'result' && isWeb) micLabel = canTalk ? '按住 说要怎么改' : '都改好了';
+    const fun = s.mods.includes('题目再有趣一点'), blue = s.mods.includes('改成淡蓝色');
+    const q = QUIZ[Math.min(s.webQ, 4)];
+    const role = ROLES[s.webScore % 3];
+    const tabs = [['home', '体验'], ['saved', '我的收藏'], ['phrases', '话术卡']].map(([k, l]) => ({
+      label: l, go: () => this.setState({ screen: k }), weight: s.screen === k ? 700 : 400,
+      color: s.screen === k ? '#1D1C1A' : '#8A867E', dot: s.screen === k ? '#B8432B' : 'transparent' }));
+    const dotStyle = d => ({ width: 7, height: 7, borderRadius: 9, background: '#B8432B', animation: 'dcdot 1.2s ' + d + 's infinite' });
+    return {
+      isHome: s.screen === 'home', isSaved: s.screen === 'saved', isPhrases: s.screen === 'phrases', isTool, isTabbed: !isTool,
+      layoutPhase: layout !== 'grid', layoutGrid: layout === 'grid', showNotes: this.props.showNotes ?? true,
+      openHero: () => this.openTool('web'),
+      cards: ORDER.map((id, i) => ({ ...TOOLS[id], cover: COVERS[id], scale: i === s.card ? 1 : .84, opacity: i === s.card ? 1 : .7,
+        tap: (e) => { if (i === s.card) this.openTool(id); else { const sc = e.currentTarget.parentElement; sc.scrollTo({ left: i * 230, behavior: 'smooth' }); } } })),
+      cardDots: ORDER.map((_, i) => ({ w: i === s.card ? '20px' : '6px', c: i === s.card ? '#1D1C1A' : '#D9D4CA' })),
+      activeTool: mk(ORDER[s.card] || 'web'),
+      onSwipe: (e) => { const i = Math.max(0, Math.min(4, Math.round(e.currentTarget.scrollLeft / 230))); if (i !== this.state.card) this.setState({ card: i }); },
+      toolList: ORDER.slice(1).concat('web').map(mk),
+      tabs,
+      savedList: s.saved.slice().reverse().map(x => ({ glyph: TOOLS[x.tool].glyph, title: TOOLS[x.tool].card ? TOOLS[x.tool].card.title + ' · ' + TOOLS[x.tool].card.tag : '粉丝测试页',
+        meta: TOOLS[x.tool].name + ' · ' + x.at, open: () => this.openTool(x.tool, 'result') })),
+      phrases: PHRASES.map(p => ({ ...p, copy: () => { try { navigator.clipboard.writeText(p.text); } catch (e) {} this.flash('已复制，可以粘贴给任何 AI'); } })),
+      tool: t, back: () => { this.clear(); this.setState({ screen: s.from || 'home', recording: false }); },
+      isIntro: s.stage === 'intro', isThinking: s.stage === 'thinking',
+      startAuto: () => this.start('auto'), startSelf: () => this.start('self'),
+      msgs: s.msgs.map(m => ({ isAi: m.role === 'a', isUser: m.role === 'u', text: m.text, who: t.phase === '宣传期' ? 'AI 记者' : s.toolId === 'job' ? 'AI 律师' : 'AI' })),
+      dots: React.createElement('span', { style: { display: 'flex', gap: 5 } }, [0, .2, .4].map(d => React.createElement('span', { key: d, style: dotStyle(d) }))),
+      showCard: s.stage === 'result' && !isWeb, card: t.card || { sections: [] },
+      showWeb: s.stage === 'result' && isWeb,
+      web: {
+        bg: blue ? '#E6EFF8' : '#F2EFE9', accent: blue ? '#2F6FB0' : '#B8432B', ink: blue ? '#14304D' : '#1D1C1A',
+        asking: s.webQ < 5, done: s.webQ >= 5, q: (fun ? q.f : q.q), progress: s.webQ < 5 ? (s.webQ + 1) + ' / 5' : '完成',
+        opts: q.o.map((o, i) => ({ label: o, pick: () => this.setState(st => ({ webQ: st.webQ + 1, webScore: st.webScore + i })) })),
+        role: role.n, roleDesc: role.d, replay: () => this.setState({ webQ: 0, webScore: 0 }),
+        signed: s.mods.includes('加上我的签名'),
+        log: s.webLog || '点选项试玩，或者告诉它怎么改：',
+        mods: MODS.filter(m => !s.mods.includes(m)).map(m => ({ label: m, apply: () => this.applyMod(m) }))
+      },
+      barResult: s.stage === 'result' && !isWeb, barMic: !(s.stage === 'result' && !isWeb),
+      restart: () => this.start(s.mode || 'auto'),
+      save: () => { if (s.savedNow) return; this.setState(st => ({ savedNow: true, saved: [...st.saved, { tool: st.toolId, at: '刚刚' }] })); this.flash('已存进“我的收藏”'); },
+      saveLabel: s.savedNow ? '已收藏' : '收藏',
+      hasSecondary: !!t.secondary && s.stage !== 'result', secOpacity: s.waiting ? 1 : .4, secondary: this.secondary,
+      micDown: this.micDown, micUp: this.micUp, micLabel,
+      micBg: s.recording ? '#B8432B' : canTalk ? '#1D1C1A' : '#E4E0D8',
+      micInk: canTalk || s.recording ? '#F5F3EE' : '#8A867E',
+      micDot: s.recording ? '#fff' : canTalk ? '#B8432B' : '#B5B0A6',
+      pulse: s.recording ? React.createElement('span', { style: { position: 'absolute', inset: 0, borderRadius: 16, border: '2px solid #B8432B', animation: 'dcpulse 1s ease-out infinite', pointerEvents: 'none' } }) : null,
+      hasToast: !!s.toast, toast: s.toast, scrollRef: this.scrollRef,
+      drama, menuOpen: s.menu, hasPoster: !!drama.poster, posterBg: drama.poster ? 'url("' + drama.poster + '")' : 'none', posterPos: drama.pos || 'center 25%', tintOpacity: drama.poster ? .22 : 0,
+      posterFail: () => { const p = drama.poster; if (p && !this.state.failed[p]) this.setState(st => ({ failed: { ...st.failed, [p]: true } })); },
+      toggleMenu: () => this.setState(st => ({ menu: !st.menu })),
+      dramaList: s.dramas.map((d, i) => ({ ...d, check: i === s.dramaIdx ? '✓' : '', currentLabel: i === s.dramaIdx ? '当前' : '',
+        removeInk: s.dramas.length > 1 ? '#B8432B' : '#C9C4BA',
+        pick: () => this.setState({ dramaIdx: i, menu: false }, () => this.flash('已切换到《' + d.name + '》')),
+        posterLabel: d.poster && !s.failed[d.poster] ? '换海报' : '传海报',
+        upload: (e) => { const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => this.setState(st => ({ dramas: st.dramas.map((x, k) => k === i ? { ...x, poster: r.result } : x) }), () => this.flash('海报已更新')); r.readAsDataURL(f); },
+        remove: () => { if (s.dramas.length < 2) return this.flash('至少保留一部戏'); this.setState(st => { const ds = st.dramas.filter((_, k) => k !== i); let di = st.dramaIdx; if (i < di) di--; if (di >= ds.length) di = ds.length - 1; return { dramas: ds, dramaIdx: di }; }); } })),
+      openAdd: () => this.setState({ menu: false, sheet: 'add', draft: { name: '', role: '', job: '' } }),
+      openManage: () => this.setState({ menu: false, sheet: 'manage' }),
+      closeSheet: () => this.setState({ sheet: null }),
+      sheetOpen: !!s.sheet, isAdd: s.sheet === 'add', isManage: s.sheet === 'manage',
+      sheetTitle: s.sheet === 'add' ? '新增一部戏' : '管理我的戏',
+      fields: [['name', '剧名', '例如：书卷一梦'], ['role', '我演的角色', '例如：江飞燕'], ['job', '角色的职业', '例如：戏班花旦']].map(([k, l, ph]) => ({ label: l, ph, value: s.draft[k], onChange: setDraft(k) })),
+      addBg: draftOk ? '#1D1C1A' : '#C9C4BA',
+      saveDrama: () => { if (!draftOk) return this.flash('请填写剧名和角色'); const nd = { name: s.draft.name.trim(), role: s.draft.role.trim(), job: s.draft.job.trim() || '角色' }; this.setState(st => ({ dramas: [...st.dramas, nd], dramaIdx: st.dramas.length, sheet: null }), () => this.flash('已切换到《' + nd.name + '》')); }
+    };
+  }
+}
+</script>
+</body>
+</html>
