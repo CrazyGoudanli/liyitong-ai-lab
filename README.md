@@ -64,7 +64,7 @@ yitong.你的域名.com {
 | `ARK_API_KEY` | 火山方舟 API Key，只放在服务器上 |
 | `ARK_MODEL` | 模型 ID 或接入点 ID。第四场拍照需要支持图片输入的模型；演示讲究快，选响应快的 |
 | `ARK_BASE_URL` | 默认 `https://ark.cn-beijing.volces.com/api/v3` |
-| `ARK_EXTRA` | 可选，额外请求参数 JSON。服务器默认已关闭深度思考（`thinking.disabled`），避免 Seed 模型先长想再答、页面一直转圈；要开思考可设 `{"thinking":{"type":"enabled"}}` |
+| `ARK_EXTRA` | 可选，额外请求参数 JSON。默认会先尝试关闭深度思考；若模型不支持 `thinking.disabled`（返回 400），会自动去掉该参数重试。要强制开思考可设 `{"thinking":{"type":"enabled"}}` |
 | `ACCESS_CODE` | 访问码，她第一次打开输一次。强烈建议设置 |
 | `PORT` | 默认 8787 |
 

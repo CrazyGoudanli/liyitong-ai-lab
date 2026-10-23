@@ -131,7 +131,7 @@ async function chat(req, res) {
   }
   if (!up.ok || !up.body) {
     console.error("[ark] HTTP", up.status, detail);
-    return send(res, 502, { error: "AI 服务返回错误", status: up.status, detail: detail.slice(0, 200) });
+    return send(res, 502, { error: "AI 服务返回错误" + (detail ? "：" + detail.slice(0, 180) : ""), status: up.status });
   }
   res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache", "x-accel-buffering": "no" });
   try { for await (const chunk of up.body) res.write(chunk); } catch {}
